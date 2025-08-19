@@ -384,17 +384,12 @@ export default function AIChatPanel() {
             </h3>
             <p className='text-sm text-gray-600'>
               {hasDocuments 
-                ? 'Chat with your documents using natural language'
+                ? 'Ready to help! Ask me anything about your documents'
                 : 'Upload documents in Sources panel to start chatting'
               }
             </p>
           </div>
           <div className='flex items-center gap-2'>
-            {!hasDocuments && (
-              <div className='text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200'>
-                📄 Upload needed
-              </div>
-            )}
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${canUseService ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
               {usageCount}/{maxFreeUsage} queries
             </span>
