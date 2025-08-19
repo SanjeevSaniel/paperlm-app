@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, ExternalLink, Loader2 } from 'lucide-react';
 import { ChatMessage } from '@/types';
@@ -139,50 +139,28 @@ export default function AIChatPanel() {
     return () => cancelAnimationFrame(id);
   }, [messages, isInitialized]);
 
-  // Textarea auto-resize
-  const adjustTextareaHeight = useCallback(() => {
-    if (!textareaRef.current) return;
-    const textarea = textareaRef.current;
-    textarea.style.height = 'auto';
+  // Force textarea to a single visual row always
+  const setSingleRowHeight = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const cs = getComputedStyle(el);
+    const lineHeight = parseFloat(cs.lineHeight || '20');
+    const paddingTop = parseFloat(cs.paddingTop || '0');
+    const paddingBottom = parseFloat(cs.paddingBottom || '0');
+    const height = lineHeight + paddingTop + paddingBottom;
+    el.style.setProperty('--chat-input-h', `${height}px`);
+    el.style.height = `${height}px`;
+    el.scrollTop = 0;
+  };
 
-    const minRows = 1;
-    const maxRows = 10;
-    const lineHeight = 24;
-    const padding = 24;
-    const minHeight = minRows * lineHeight + padding;
-    const maxHeight = maxRows * lineHeight + padding;
-
-    const newHeight = Math.max(
-      minHeight,
-      Math.min(textarea.scrollHeight, maxHeight),
-    );
-    textarea.style.height = newHeight + 'px';
+  useEffect(() => {
+    setSingleRowHeight();
+    // Recompute if fonts/themes change
+    const onResize = () => setSingleRowHeight();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
-
-  useEffect(() => {
-    adjustTextareaHeight();
-  }, [inputValue, adjustTextareaHeight]);
-
-  const resetTextareaHeight = useCallback(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.minHeight = '48px';
-      adjustTextareaHeight();
-    }
-  }, [adjustTextareaHeight]);
-
-  useEffect(() => {
-    resetTextareaHeight();
-  }, [resetTextareaHeight]);
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      setTimeout(resetTextareaHeight, 100);
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () =>
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [resetTextareaHeight]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -257,6 +235,8 @@ export default function AIChatPanel() {
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+      // Reapply single row height after send, in case fonts/styles changed
+      setSingleRowHeight();
     }
   };
 
@@ -393,26 +373,26 @@ export default function AIChatPanel() {
               value={inputValue}
               onChange={(e) => {
                 setInputValue(e.target.value);
-                adjustTextareaHeight();
+                // Re-enforce single row regardless of content
+                setSingleRowHeight();
               }}
               placeholder={
                 isSmallScreen ? 'Type here...' : 'Type your question...'
               }
               disabled={isLoading}
               rows={1}
-              className='w-full border-0 focus:ring-0 focus:border-0 outline-none bg-transparent resize-none pr-14 py-3 px-4 text-slate-800 placeholder-slate-400 shadow-none'
+              className='w-full border-0 focus:ring-0 focus:border-0 outline-none bg-transparent resize-none pr-14 py-3 px-4 text-slate-800 placeholder-slate-400 shadow-none overflow-hidden h-[var(--chat-input-h)]'
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
                   handleSubmit(e);
                 }
               }}
-              onFocus={() => setTimeout(resetTextareaHeight, 10)}
+              onFocus={() => setSingleRowHeight()}
               style={{
-                minHeight: '48px',
-                maxHeight: '264px',
-                lineHeight: '1.5',
+                // Fallback if CSS var not set yet
                 height: '48px',
+                lineHeight: '1.5',
               }}
             />
             <motion.button
