@@ -33,14 +33,13 @@ export default function AIAssistantAnimation({ isVisible, onComplete }: AIAssist
     exit: { 
       opacity: 0, 
       scale: 0.9,
-      y: -20,
       transition: { duration: 0.4, ease: "easeIn" }
     }
   };
 
   const floatingVariants = {
     animate: {
-      y: [0, -8, 0],
+      scale: [1, 1.02, 1],
       transition: {
         duration: 3,
         repeat: Infinity,
@@ -57,7 +56,7 @@ export default function AIAssistantAnimation({ isVisible, onComplete }: AIAssist
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="flex flex-col items-center justify-center h-full px-8 py-12"
+          className="flex flex-col items-center justify-center px-8 py-12 absolute inset-0"
         >
           {/* Main AI Interface */}
           <motion.div 
@@ -139,9 +138,9 @@ export default function AIAssistantAnimation({ isVisible, onComplete }: AIAssist
             <AnimatePresence mode="wait">
               <motion.div
                 key={phase}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.3 }}
               >
                 {phase === 0 && (
@@ -181,14 +180,14 @@ export default function AIAssistantAnimation({ isVisible, onComplete }: AIAssist
                       transition={{ delay: 0.3, duration: 0.4 }}
                     >
                       <motion.div
-                        whileHover={{ scale: 1.05, y: -2 }}
+                        whileHover={{ scale: 1.05 }}
                         className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-full text-xs text-slate-700 shadow-sm cursor-pointer"
                       >
                         <FileText className="w-3 h-3" />
                         Upload
                       </motion.div>
                       <motion.div
-                        whileHover={{ scale: 1.05, y: -2 }}
+                        whileHover={{ scale: 1.05 }}
                         className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-full text-xs text-slate-700 shadow-sm cursor-pointer"
                       >
                         <MessageCircle className="w-3 h-3" />

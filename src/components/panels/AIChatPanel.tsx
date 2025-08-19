@@ -9,15 +9,32 @@ import { useFreemium } from '@/contexts/FreemiumContext';
 import { useDocumentContext } from '@/contexts/DocumentContext';
 import AIAssistantAnimation from '../AIAssistantAnimation';
 
-export default function ChatPanel() {
+export default function AIChatPanel() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showAnimation, setShowAnimation] = useState(true);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { canPerformAction, updateUsage, showUpgradeModal, usage } = useFreemium();
   const { hasDocuments, documentCount } = useDocumentContext();
+
+  // Handle responsive screen size
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSmallScreen(window.innerWidth < 768);
+    };
+    
+    // Set initial value
+    handleResize();
+    
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Hide animation when documents are uploaded or user starts chatting
   useEffect(() => {
@@ -35,6 +52,30 @@ export default function ChatPanel() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Auto-resize functionality for textarea - 1 row min, 10 rows max
+  const adjustTextareaHeight = () => {
+    if (textareaRef.current) {
+      const textarea = textareaRef.current;
+      textarea.style.height = 'auto';
+      
+      const minRows = 1;
+      const maxRows = 10;
+      
+      // Calculate heights based on rows (24px line height + padding)
+      const lineHeight = 24;
+      const padding = 24;
+      const minHeight = (minRows * lineHeight) + padding;
+      const maxHeight = (maxRows * lineHeight) + padding;
+      
+      const newHeight = Math.max(minHeight, Math.min(textarea.scrollHeight, maxHeight));
+      textarea.style.height = newHeight + 'px';
+    }
+  };
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [inputValue]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,7 +167,7 @@ export default function ChatPanel() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 relative">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3 relative">
         {/* AI Assistant Animation - shown when no documents and no messages */}
         <AIAssistantAnimation 
           isVisible={showAnimation} 
@@ -138,9 +179,10 @@ export default function ChatPanel() {
           {!showAnimation && messages.map((message) => (
             <motion.div
               key={message.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {message.role === 'assistant' && (
@@ -165,8 +207,9 @@ export default function ChatPanel() {
                     {message.citations.map((citation) => (
                       <motion.div
                         key={citation.id}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
                         className="bg-purple-50/50 border border-purple-200/50 rounded-lg p-2 cursor-pointer hover:bg-purple-100/50 transition-colors"
                       >
                         <div className="flex items-start justify-between">
@@ -207,8 +250,9 @@ export default function ChatPanel() {
         {/* Loading indicator */}
         {!showAnimation && isLoading && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
             className="flex gap-3"
           >
             <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -229,22 +273,32 @@ export default function ChatPanel() {
       {/* Input */}
       <div className="border-t border-slate-200 p-4 bg-white/50">
         <form onSubmit={handleSubmit} className="w-full">
-          <div className="relative w-full bg-white rounded-xl shadow-sm border border-slate-300 focus-within:ring-2 focus-within:ring-purple-300 focus-within:border-purple-500 transition-all">
-            <Textarea
+          <div className="relative w-full bg-white rounded-xl shadow-sm border border-slate-200 focus-within:ring-2 focus-within:ring-amber-200 focus-within:border-amber-400 transition-all">
+            <textarea
               ref={textareaRef}
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Ask a question about your documents..."
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                adjustTextareaHeight();
+              }}
+              placeholder={isSmallScreen ? "Type here..." : "Type your question..."}
               disabled={isLoading}
-              autoResize={true}
-              minRows={1}
-              maxRows={5}
-              className="w-full border-0 focus:ring-0 outline-none bg-transparent resize-none pr-14 py-3 px-4 text-slate-800 placeholder-slate-400"
+              rows={1}
+              className="w-full border-0 focus:ring-0 focus:border-0 outline-none bg-transparent resize-none pr-14 py-3 px-4 text-slate-800 placeholder-slate-400 shadow-none"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
                   handleSubmit(e);
                 }
+              }}
+              style={{
+                border: 'none',
+                outline: 'none',
+                boxShadow: 'none',
+                background: 'transparent',
+                minHeight: '48px', // 1 row minimum
+                maxHeight: '264px', // 10 rows maximum
+                lineHeight: '1.5'
               }}
             />
             <motion.button
@@ -255,12 +309,8 @@ export default function ChatPanel() {
                   ? 'text-slate-400 cursor-not-allowed'
                   : 'text-white bg-[#7bc478] hover:bg-[#6bb068] shadow-sm hover:shadow-md cursor-pointer'
               }`}
-              whileHover={!inputValue.trim() || isLoading ? {} : { scale: 1.05 }}
-              whileTap={!inputValue.trim() || isLoading ? {} : { 
-                scale: 0.95,
-                rotate: [0, -10, 10, 0],
-                transition: { duration: 0.3 }
-              }}
+              whileHover={!inputValue.trim() || isLoading ? {} : { scale: 1.02 }}
+              whileTap={!inputValue.trim() || isLoading ? {} : { scale: 0.98 }}
               animate={isLoading ? { 
                 rotate: 360,
                 transition: { duration: 1, repeat: Infinity, ease: "linear" }

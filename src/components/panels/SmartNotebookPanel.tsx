@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Edit3, Save, X, FileText, Lightbulb, Quote, Eye } from 'lucide-react';
 import { Button, Input, Textarea } from '../ui';
-import NoteDetailsDialog from '../NoteDetailsDialog';
+import NoteEditDialog from '../NoteEditDialog';
 
 interface Note {
   id: string;
@@ -15,7 +15,7 @@ interface Note {
   updatedAt: Date;
 }
 
-export default function NotebookPanel() {
+export default function SmartNotebookPanel() {
   const [notes, setNotes] = useState<Note[]>([
     {
       id: '1',
@@ -302,7 +302,7 @@ export default function NotebookPanel() {
       </div>
 
       {/* Note Details Dialog */}
-      <NoteDetailsDialog
+      <NoteEditDialog
         note={selectedNote}
         isOpen={showDetailsDialog}
         onClose={() => {
