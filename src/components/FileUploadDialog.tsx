@@ -21,7 +21,7 @@ interface AddContentDialogProps {
   children: React.ReactNode;
 }
 
-export default function AddContentDialog({
+export default function FileUploadDialog({
   onFileUpload,
   onTextSubmit,
   onUrlSubmit,
@@ -121,7 +121,7 @@ export default function AddContentDialog({
                 </div>
                 <div className="text-left">
                   <p className="text-sm font-semibold text-gray-900">Upload Files</p>
-                  <p className="text-xs text-gray-500">PDF, TXT, DOCX up to 10MB each</p>
+                  <p className="text-xs text-gray-500">PDF, TXT, CSV, DOCX up to 10MB each</p>
                 </div>
               </motion.button>
 
@@ -206,7 +206,7 @@ export default function AddContentDialog({
                     Drop files here or click to browse
                   </p>
                   <p className="text-xs text-gray-500 mb-4">
-                    Supports PDF, TXT, DOCX up to 10MB each
+                    Supports PDF, TXT, CSV, DOCX up to 10MB each
                   </p>
                   
                   <label className="cursor-pointer">
@@ -217,7 +217,7 @@ export default function AddContentDialog({
                     <input
                       type="file"
                       multiple
-                      accept=".pdf,.txt,.docx"
+                      accept=".pdf,.txt,.csv,.docx"
                       onChange={handleFileSelect}
                       className="hidden"
                     />

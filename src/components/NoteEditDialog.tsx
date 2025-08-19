@@ -29,7 +29,7 @@ interface NoteDetailsDialogProps {
   onDelete?: (noteId: string) => void;
 }
 
-export default function NoteDetailsDialog({
+export default function NoteEditDialog({
   note,
   isOpen,
   onClose,

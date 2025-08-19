@@ -120,7 +120,33 @@ export const extractTextFromFile = async (file: File): Promise<string> => {
   }
   
   if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
-    return await file.text();
+    const csvText = await file.text();
+    // Convert CSV to readable text format
+    const lines = csvText.split('\n');
+    const headers = lines[0]?.split(',') || [];
+    
+    let formattedText = `CSV Document: ${file.name}\n\n`;
+    formattedText += `Headers: ${headers.join(', ')}\n\n`;
+    formattedText += `Data:\n`;
+    
+    lines.slice(1).forEach((line, index) => {
+      if (line.trim()) {
+        const values = line.split(',');
+        formattedText += `Row ${index + 1}:\n`;
+        headers.forEach((header, i) => {
+          formattedText += `  ${header}: ${values[i] || ''}\n`;
+        });
+        formattedText += '\n';
+      }
+    });
+    
+    return formattedText;
+  }
+  
+  // Support DOCX files
+  if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.endsWith('.docx')) {
+    // For now, return a message indicating DOCX support is limited
+    return `DOCX Document: ${file.name}\n\nNote: DOCX processing requires additional libraries. Please convert to PDF or TXT for full text extraction.`;
   }
   
   throw new Error(`Unsupported file type: ${file.type}`);

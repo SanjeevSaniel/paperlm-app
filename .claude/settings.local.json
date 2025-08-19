@@ -10,7 +10,8 @@
       "Bash(start http://localhost:3001)",
       "Bash(cd:*)",
       "Bash(git checkout:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": [],
