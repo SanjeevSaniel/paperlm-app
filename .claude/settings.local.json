@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run lint)",
+      "Bash(rm:*)",
+      "Bash(npx:*)",
+      "Bash(curl:*)",
+      "Bash(start http://localhost:3001)",
+      "Bash(cd:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": [],
+    "additionalDirectories": [
+      "D:\\d D:\\1A-Personal\\D-Learnings\\1-Projects"
+    ]
+  }
+}
