@@ -11,7 +11,8 @@
       "Bash(cd:*)",
       "Bash(git checkout:*)",
       "Bash(git add:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": [],
