@@ -376,13 +376,26 @@ export default function AIChatPanel() {
   return (
     <div className='h-full min-h-0 flex flex-col overflow-hidden'>
       {/* Header */}
-      <div className='px-4 py-2 border-b border-amber-100/80 bg-amber-50/30 shrink-0'>
+      <div className='px-4 py-3 border-b border-amber-100/80 bg-amber-50/30 shrink-0'>
         <div className='flex items-center justify-between'>
-          <p className='text-sm text-gray-600'>
-            Ask questions about your uploaded documents
-          </p>
-          <div className='flex items-center gap-2 text-xs'>
-            <span className={`px-2 py-1 rounded-full ${canUseService ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+          <div className='flex-1'>
+            <h3 className='text-base font-semibold text-gray-900 mb-1'>
+              AI Chat Assistant
+            </h3>
+            <p className='text-sm text-gray-600'>
+              {hasDocuments 
+                ? 'Chat with your documents using natural language'
+                : 'Upload documents in Sources panel to start chatting'
+              }
+            </p>
+          </div>
+          <div className='flex items-center gap-2'>
+            {!hasDocuments && (
+              <div className='text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200'>
+                📄 Upload needed
+              </div>
+            )}
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${canUseService ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
               {usageCount}/{maxFreeUsage} queries
             </span>
           </div>
