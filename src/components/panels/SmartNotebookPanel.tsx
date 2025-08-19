@@ -1,39 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Edit3, Save, X, FileText, Lightbulb, Quote, Eye } from 'lucide-react';
 import { Button, Input, Textarea } from '../ui';
 import NoteEditDialog from '../NoteEditDialog';
+import { getSessionData, updateSessionNotebookNotes, NotebookNote } from '@/lib/sessionStorage';
 
-interface Note {
-  id: string;
-  title: string;
-  content: string;
+// Use NotebookNote from sessionStorage instead of local Note interface
+type Note = NotebookNote & {
   type: 'summary' | 'insight' | 'quote';
   createdAt: Date;
   updatedAt: Date;
-}
+};
 
 export default function SmartNotebookPanel() {
-  const [notes, setNotes] = useState<Note[]>([
-    {
-      id: '1',
-      title: 'Key Findings',
-      content: 'The research shows significant improvements in processing speed when using vector databases for semantic search operations.',
-      type: 'summary',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      id: '2',
-      title: 'Research Insight',
-      content: 'Vector embeddings capture semantic meaning better than traditional keyword-based approaches, leading to more accurate document retrieval.',
-      type: 'insight',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
@@ -42,6 +25,75 @@ export default function SmartNotebookPanel() {
   const [newNoteType, setNewNoteType] = useState<Note['type']>('summary');
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+
+  // Load notes from session storage on mount
+  useEffect(() => {
+    const loadNotesFromSession = () => {
+      try {
+        const sessionData = getSessionData();
+        if (sessionData && sessionData.notebookNotes.length > 0) {
+          // Convert session notes to local Note format
+          const sessionNotes: Note[] = sessionData.notebookNotes.map((note) => ({
+            ...note,
+            type: 'summary' as const, // Default type for migrated notes
+            createdAt: new Date(note.createdAt),
+            updatedAt: new Date(note.updatedAt),
+          }));
+          setNotes(sessionNotes);
+        } else {
+          // Initialize with sample notes if no session data exists
+          const sampleNotes: Note[] = [
+            {
+              id: '1',
+              title: 'Key Findings',
+              content: 'The research shows significant improvements in processing speed when using vector databases for semantic search operations.',
+              type: 'summary',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+            {
+              id: '2',
+              title: 'Research Insight',
+              content: 'Vector embeddings capture semantic meaning better than traditional keyword-based approaches, leading to more accurate document retrieval.',
+              type: 'insight',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ];
+          setNotes(sampleNotes);
+          // Save sample notes to session storage
+          const sessionNotes = sampleNotes.map(note => ({
+            id: note.id,
+            title: note.title,
+            content: note.content,
+            createdAt: note.createdAt.toISOString(),
+            updatedAt: note.updatedAt.toISOString(),
+          }));
+          updateSessionNotebookNotes(sessionNotes);
+        }
+      } catch (error) {
+        console.warn('Failed to load notebook notes from session:', error);
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+
+    loadNotesFromSession();
+  }, []);
+
+  // Save notes to session storage whenever they change
+  useEffect(() => {
+    if (isInitialized && notes.length >= 0) {
+      const sessionNotes = notes.map(note => ({
+        id: note.id,
+        title: note.title,
+        content: note.content,
+        createdAt: note.createdAt.toISOString(),
+        updatedAt: note.updatedAt.toISOString(),
+      }));
+      updateSessionNotebookNotes(sessionNotes);
+    }
+  }, [notes, isInitialized]);
 
   const startEditing = (note: Note) => {
     setEditingId(note.id);

@@ -1,0 +1,1 @@
+This is a test document for debugging the Qdrant database connection issue. The content is simple but should be enough to create chunks and test the vector database upload functionality.

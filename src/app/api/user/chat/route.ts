@@ -6,20 +6,28 @@ import { ChatMessage } from '@/types';
 
 // GET - Load user chat history
 export async function GET(request: NextRequest) {
+  console.log('GET /api/user/chat called');
   try {
     const user = await currentUser();
+    console.log('Current user:', user?.id || 'No user');
+    
     if (!user) {
+      console.log('Returning 401 - No user');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    console.log('Connecting to MongoDB...');
     await dbConnect();
 
+    console.log('Finding user document...');
     const userDoc = await User.findOne({ clerkId: user.id });
     if (!userDoc) {
+      console.log('No user document found, returning empty messages');
       return NextResponse.json({ messages: [] });
     }
 
-    return NextResponse.json({ messages: userDoc.chatHistory });
+    console.log('Returning chat history:', userDoc.chatHistory?.length || 0, 'messages');
+    return NextResponse.json({ messages: userDoc.chatHistory || [] });
   } catch (error) {
     console.error('Error loading chat history:', error);
     return NextResponse.json(

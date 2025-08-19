@@ -5,6 +5,7 @@ import { FreemiumProvider } from '@/contexts/FreemiumContext';
 import { PanelType } from '@/types';
 import { useClerk, useUser } from '@clerk/nextjs';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Toaster } from 'react-hot-toast';
 import {
   ChevronLeft,
   ChevronRight,
@@ -115,7 +116,7 @@ export default function AppLayout() {
   return (
     <FreemiumProvider onShowUpgradeModal={handleShowUpgradeModal}>
       <DocumentProvider>
-        <div className='h-screen bg-gradient-to-br from-purple-50/60 via-amber-50/50 to-orange-50/40 flex flex-col'>
+        <div className='h-screen max-h-screen bg-gradient-to-br from-purple-50/60 via-amber-50/50 to-orange-50/40 flex flex-col overflow-hidden'>
           {/* Header */}
           <header className='px-4 md:px-6 py-1.5'>
             <div className='max-w-screen-2xl mx-auto flex items-center justify-between'>
@@ -177,7 +178,7 @@ export default function AppLayout() {
           </header>
 
           {/* Main Content - Card Layout */}
-          <main className='flex-1 p-3 md:p-4 overflow-hidden'>
+          <main className='flex-1 p-3 md:p-4 overflow-hidden min-h-0'>
             <div className='max-w-screen-2xl mx-auto h-full'>
               {/* Always show the three-panel layout */}
               <div
@@ -393,6 +394,33 @@ export default function AppLayout() {
             currentUsage={upgradeModalData.currentUsage}
             limits={upgradeModalData.limits}
             trigger={upgradeModalData.trigger}
+          />
+
+          {/* Toast Notifications */}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 5000,
+              style: {
+                background: '#ffffff',
+                color: '#374151',
+                border: '1px solid #e5e7eb',
+                borderRadius: '12px',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+              },
+              success: {
+                iconTheme: {
+                  primary: '#10b981',
+                  secondary: '#ffffff',
+                },
+              },
+              error: {
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#ffffff',
+                },
+              },
+            }}
           />
         </div>
       </DocumentProvider>

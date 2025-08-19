@@ -76,7 +76,7 @@ const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
 const CardContent = forwardRef<HTMLDivElement, CardContentProps>(
   ({ className = '', children, ...props }, ref) => {
     return (
-      <div ref={ref} className={`flex-1 overflow-hidden ${className}`} {...props}>
+      <div ref={ref} className={`flex-1 overflow-hidden min-h-0 ${className}`} {...props}>
         {children}
       </div>
     );
