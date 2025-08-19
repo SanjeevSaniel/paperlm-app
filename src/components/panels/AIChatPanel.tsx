@@ -7,7 +7,9 @@ import { ChatMessage } from '@/types';
 import { Button, Textarea } from '../ui';
 import { useFreemium } from '@/contexts/FreemiumContext';
 import { useDocumentContext } from '@/contexts/DocumentContext';
+import { useUser } from '@clerk/nextjs';
 import AIAssistantAnimation from '../AIAssistantAnimation';
+import { getSessionData, updateSessionChatMessages } from '@/lib/sessionStorage';
 
 export default function AIChatPanel() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -15,10 +17,12 @@ export default function AIChatPanel() {
   const [isLoading, setIsLoading] = useState(false);
   const [showAnimation, setShowAnimation] = useState(true);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { canPerformAction, updateUsage, showUpgradeModal, usage } = useFreemium();
   const { hasDocuments, documentCount } = useDocumentContext();
+  const { user, isLoaded } = useUser();
 
   // Handle responsive screen size
   useEffect(() => {
@@ -35,6 +39,90 @@ export default function AIChatPanel() {
     // Cleanup
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Load chat history from session storage and API on mount
+  useEffect(() => {
+    if (!isLoaded) return; // Wait for user authentication to load
+
+    const loadChatHistory = async () => {
+      try {
+        // First, try to load from session storage
+        const sessionData = getSessionData();
+        if (sessionData && sessionData.chatMessages.length > 0) {
+          const parsedMessages = sessionData.chatMessages.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }));
+          setMessages(parsedMessages);
+        } else {
+          // Fallback to localStorage for migration
+          const savedMessages = localStorage.getItem('paperlm_chat_history');
+          if (savedMessages) {
+            const parsedMessages = JSON.parse(savedMessages).map((msg: any) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp)
+            }));
+            setMessages(parsedMessages);
+            // Migrate to session storage
+            updateSessionChatMessages(parsedMessages);
+          }
+        }
+
+        // For authenticated users, try to load from API
+        if (user) {
+          const response = await fetch('/api/user/chat');
+          if (response.ok) {
+            const { messages: apiMessages } = await response.json();
+            if (apiMessages && apiMessages.length > 0) {
+              const formattedMessages = apiMessages.map((msg: any) => ({
+                ...msg,
+                timestamp: new Date(msg.timestamp)
+              }));
+              setMessages(formattedMessages);
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load chat history:', error);
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+
+    loadChatHistory();
+  }, [isLoaded, user]);
+
+  // Save messages to session storage whenever they change
+  useEffect(() => {
+    if (isInitialized && messages.length > 0) {
+      // Save to session storage
+      updateSessionChatMessages(messages);
+      
+      // Also keep localStorage for backward compatibility
+      localStorage.setItem('paperlm_chat_history', JSON.stringify(messages));
+      
+      // For authenticated users, also sync to API
+      if (user) {
+        const syncToAPI = async () => {
+          try {
+            await fetch('/api/user/chat', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ messages }),
+            });
+          } catch (error) {
+            console.warn('Failed to sync chat history to API:', error);
+          }
+        };
+
+        // Debounce API sync
+        const timeoutId = setTimeout(syncToAPI, 2000);
+        return () => clearTimeout(timeoutId);
+      }
+    }
+  }, [messages, isInitialized]);
 
   // Hide animation when documents are uploaded or user starts chatting
   useEffect(() => {
@@ -76,6 +164,29 @@ export default function AIChatPanel() {
   useEffect(() => {
     adjustTextareaHeight();
   }, [inputValue]);
+
+  // Reset textarea height when panel is expanded or component mounts
+  const resetTextareaHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.minHeight = '48px';
+      adjustTextareaHeight();
+    }
+  };
+
+  useEffect(() => {
+    resetTextareaHeight();
+  }, []);
+
+  // Also reset on window resize to handle panel expansion
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setTimeout(resetTextareaHeight, 100);
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,14 +271,14 @@ export default function AIChatPanel() {
   // Height adjustment is now handled by the Textarea component
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col max-h-full overflow-hidden">
       {/* Compact Header for Card */}
-      <div className="p-4 border-b border-amber-100/80 bg-amber-50/30">
+      <div className="px-4 py-3 border-b border-amber-100/80 bg-amber-50/30 flex-shrink-0">
         <p className="text-sm text-gray-600">Ask questions about your uploaded documents</p>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3 relative">
+      {/* Messages - Takes remaining space but constrained */}
+      <div className="flex-1 overflow-y-scroll overflow-x-hidden p-4 space-y-3 relative min-h-0">
         {/* AI Assistant Animation - shown when no documents and no messages */}
         <AIAssistantAnimation 
           isVisible={showAnimation} 
@@ -270,8 +381,8 @@ export default function AIChatPanel() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="border-t border-slate-200 p-4 bg-white/50">
+      {/* Input - Always at bottom */}
+      <div className="border-t border-slate-200 p-4 bg-white/50 flex-shrink-0">
         <form onSubmit={handleSubmit} className="w-full">
           <div className="relative w-full bg-white rounded-xl shadow-sm border border-slate-200 focus-within:ring-2 focus-within:ring-amber-200 focus-within:border-amber-400 transition-all">
             <textarea
@@ -291,14 +402,19 @@ export default function AIChatPanel() {
                   handleSubmit(e);
                 }
               }}
+              onFocus={() => {
+                // Ensure proper height on focus
+                setTimeout(resetTextareaHeight, 10);
+              }}
               style={{
                 border: 'none',
                 outline: 'none',
                 boxShadow: 'none',
                 background: 'transparent',
-                minHeight: '48px', // 1 row minimum
-                maxHeight: '264px', // 10 rows maximum
-                lineHeight: '1.5'
+                minHeight: '48px',
+                maxHeight: '264px',
+                lineHeight: '1.5',
+                height: '48px' // Force initial height
               }}
             />
             <motion.button

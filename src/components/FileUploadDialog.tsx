@@ -210,17 +210,21 @@ export default function FileUploadDialog({
                   </p>
                   
                   <label className="cursor-pointer">
-                    <Button variant="primary" size="sm">
-                      <Upload className="w-4 h-4 mr-2" />
-                      Choose Files
-                    </Button>
                     <input
                       type="file"
                       multiple
-                      accept=".pdf,.txt,.csv,.docx"
+                      accept=".pdf,.txt,.csv,.docx,.md"
                       onChange={handleFileSelect}
                       className="hidden"
+                      id="file-upload-input"
                     />
+                    <Button variant="primary" size="sm" onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById('file-upload-input')?.click();
+                    }}>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Choose Files
+                    </Button>
                   </label>
                 </div>
               )}

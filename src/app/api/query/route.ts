@@ -12,7 +12,9 @@ export const POST = withFreemium(async (request: NextRequest, user, usage) => {
 
   // Search for relevant documents using appropriate storage
   const identifier = user ? user.userId : usage.sessionId;
+  console.log('Query details:', { message, identifier, isAnonymous: !usage.isAuthenticated });
   const searchResults = await similaritySearch(message, identifier, 5, !usage.isAuthenticated);
+  console.log('Search results:', searchResults.length, searchResults.map(r => ({ content: r.pageContent.substring(0, 100), metadata: r.metadata })));
 
   // Prepare context from search results
   const context = searchResults
@@ -28,17 +30,19 @@ export const POST = withFreemium(async (request: NextRequest, user, usage) => {
   // Generate response
   const response = await generateChatCompletion(messages, context);
 
-  // Prepare citations
-  const citations = searchResults.map((doc, index) => ({
-    id: `citation-${index}`,
-    documentId: doc.metadata.documentId,
-    documentName: doc.metadata.fileName,
-    chunkId: doc.metadata.chunkId,
-    content: doc.pageContent.substring(0, 200) + '...',
-    startChar: doc.metadata.startChar,
-    endChar: doc.metadata.endChar,
-    relevanceScore: 0.9 - index * 0.1, // Approximate relevance score
-  }));
+  // Prepare citations - ensure metadata exists
+  const citations = searchResults
+    .filter(doc => doc.pageContent && doc.pageContent.length > 0)
+    .map((doc, index) => ({
+      id: `citation-${index}`,
+      documentId: doc.metadata?.documentId || 'unknown',
+      documentName: doc.metadata?.fileName || 'Unknown Document',
+      chunkId: doc.metadata?.chunkId || `chunk-${index}`,
+      content: doc.pageContent.length > 200 ? doc.pageContent.substring(0, 200) + '...' : doc.pageContent,
+      startChar: doc.metadata?.startChar || 0,
+      endChar: doc.metadata?.endChar || doc.pageContent.length,
+      relevanceScore: Math.max(0.1, 0.9 - index * 0.1), // Approximate relevance score
+    }));
 
   const remainingUsage = {
     uploads: usage.isAuthenticated ? Infinity : (3 - usage.uploads),

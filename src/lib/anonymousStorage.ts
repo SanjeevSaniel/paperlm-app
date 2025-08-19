@@ -1,13 +1,12 @@
-// Temporary in-memory storage for anonymous users
-// In production, you'd want to use Redis or similar
+// Existing contents omitted for brevity; only showing additions and relevant parts
 
-interface AnonymousDocument {
+export interface AnonymousDocument {
   id: string;
   sessionId: string;
   fileName: string;
   fileType: string;
   fileSize: number;
-  uploadedAt: string;
+  uploadedAt: string; // ISO string
   chunks: Array<{
     id: string;
     content: string;
@@ -18,54 +17,44 @@ interface AnonymousDocument {
   }>;
 }
 
-// Simple in-memory store with automatic cleanup
 class AnonymousStore {
-  private documents = new Map<string, AnonymousDocument>();
-  private sessionDocuments = new Map<string, Set<string>>();
-  private cleanupInterval: NodeJS.Timeout;
+  private docs: Map<string, AnonymousDocument>;
 
   constructor() {
-    // Cleanup every 30 minutes
-    this.cleanupInterval = setInterval(() => {
-      this.cleanup();
-    }, 30 * 60 * 1000);
+    this.docs = new Map();
   }
 
   addDocument(doc: AnonymousDocument) {
-    this.documents.set(doc.id, doc);
-    
-    if (!this.sessionDocuments.has(doc.sessionId)) {
-      this.sessionDocuments.set(doc.sessionId, new Set());
-    }
-    this.sessionDocuments.get(doc.sessionId)!.add(doc.id);
+    this.docs.set(doc.id, doc);
   }
 
   getDocumentsBySession(sessionId: string): AnonymousDocument[] {
-    const docIds = this.sessionDocuments.get(sessionId);
-    if (!docIds) return [];
-
-    return Array.from(docIds)
-      .map(id => this.documents.get(id))
-      .filter(Boolean) as AnonymousDocument[];
+    const result: AnonymousDocument[] = [];
+    for (const doc of this.docs.values()) {
+      if (doc.sessionId === sessionId) {
+        result.push(doc);
+      }
+    }
+    return result;
   }
 
-  getAllChunksBySession(sessionId: string): Array<{
-    id: string;
-    content: string;
-    embedding: number[];
-    metadata: {
-      documentId: string;
-      chunkId: string;
-      chunkIndex: number;
-      startChar: number;
-      endChar: number;
-      fileName: string;
-      fileType: string;
-      fileSize: number;
-    };
-  }> {
+  getAllChunksBySession(sessionId: string) {
     const docs = this.getDocumentsBySession(sessionId);
-    const allChunks: any[] = [];
+    const allChunks: Array<{
+      id: string;
+      content: string;
+      embedding: number[];
+      metadata: {
+        documentId: string;
+        chunkId: string;
+        chunkIndex: number;
+        startChar: number;
+        endChar: number;
+        fileName: string;
+        fileType: string;
+        fileSize: number;
+      };
+    }> = [];
 
     for (const doc of docs) {
       for (const chunk of doc.chunks) {
@@ -90,30 +79,27 @@ class AnonymousStore {
     return allChunks;
   }
 
-  private cleanup() {
-    const cutoff = Date.now() - (2 * 60 * 60 * 1000); // 2 hours ago
-    
-    for (const [docId, doc] of this.documents.entries()) {
-      const uploadTime = new Date(doc.uploadedAt).getTime();
-      if (uploadTime < cutoff) {
-        this.documents.delete(docId);
-        
-        // Clean up session tracking
-        const sessionDocs = this.sessionDocuments.get(doc.sessionId);
-        if (sessionDocs) {
-          sessionDocs.delete(docId);
-          if (sessionDocs.size === 0) {
-            this.sessionDocuments.delete(doc.sessionId);
-          }
-        }
+  /**
+   * Remove anonymous documents older than the specified hours.
+   * Returns number of documents removed.
+   */
+  cleanupOlderThan(hours: number): number {
+    const cutoff = Date.now() - hours * 60 * 60 * 1000;
+    let removed = 0;
+    for (const [id, doc] of this.docs.entries()) {
+      const uploadedTs = new Date(doc.uploadedAt).getTime();
+      if (!Number.isNaN(uploadedTs) && uploadedTs < cutoff) {
+        this.docs.delete(id);
+        removed++;
       }
     }
-  }
-
-  destroy() {
-    clearInterval(this.cleanupInterval);
+    if (removed > 0) {
+      console.log(
+        `Anonymous storage cleanup removed ${removed} documents older than ${hours}h`,
+      );
+    }
+    return removed;
   }
 }
 
 export const anonymousStore = new AnonymousStore();
-export type { AnonymousDocument };

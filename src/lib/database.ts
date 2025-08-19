@@ -9,6 +9,10 @@ export interface DocumentRecord {
   fileSize: number;
   uploadedAt: string;
   userId: string;
+  // Storage information
+  storageFileId?: string;
+  storageUrl?: string;
+  storageProvider?: 'cloudinary' | 'gridfs' | 'local';
 }
 
 export interface ChunkRecord {
@@ -61,6 +65,9 @@ db.exec(`
     file_size INTEGER NOT NULL,
     uploaded_at TEXT NOT NULL,
     user_id TEXT NOT NULL,
+    storage_file_id TEXT,
+    storage_url TEXT,
+    storage_provider TEXT,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
   );
 
@@ -119,11 +126,21 @@ export const ensureUser = (clerkUserId: string, email: string, firstName?: strin
 // Document management
 export const saveDocument = (doc: DocumentRecord): void => {
   const stmt = db.prepare(`
-    INSERT INTO documents (id, file_name, file_type, file_size, uploaded_at, user_id)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO documents (id, file_name, file_type, file_size, uploaded_at, user_id, storage_file_id, storage_url, storage_provider)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   
-  stmt.run(doc.id, doc.fileName, doc.fileType, doc.fileSize, doc.uploadedAt, doc.userId);
+  stmt.run(
+    doc.id, 
+    doc.fileName, 
+    doc.fileType, 
+    doc.fileSize, 
+    doc.uploadedAt, 
+    doc.userId,
+    doc.storageFileId || null,
+    doc.storageUrl || null,
+    doc.storageProvider || null
+  );
 };
 
 export const getDocumentsByUser = (userId: string): DocumentRecord[] => {
