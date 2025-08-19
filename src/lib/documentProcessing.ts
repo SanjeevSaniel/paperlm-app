@@ -4,11 +4,62 @@ import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import os from 'os';
 import path from 'path';
 
-// Chunk a plain string into overlapping segments
+// Simplified PDF extraction using LangChain PDFLoader (like your working example)
+const extractPDFText = async (file: File): Promise<string> => {
+  const arrayBuffer = await file.arrayBuffer();
+
+  // Create temporary file for LangChain PDFLoader (same approach as your working code)
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paperlm-'));
+  const tmpPath = path.join(tmpDir, `upload-${Date.now()}.pdf`);
+
+  try {
+    // Write file to temporary location (like your './nodejs.pdf' approach)
+    await fs.writeFile(tmpPath, Buffer.from(arrayBuffer));
+
+    // Use LangChain PDFLoader (exactly like your working code)
+    const { PDFLoader } = await import(
+      '@langchain/community/document_loaders/fs/pdf'
+    );
+    const loader = new PDFLoader(tmpPath, {
+      splitPages: false, // Get all text as single document
+      parsedItemSeparator: '\n',
+    });
+
+    // Load documents (same as your: const docs = await loader.load())
+    const docs = await loader.load();
+
+    if (!docs || docs.length === 0) {
+      throw new Error('No content extracted from PDF file');
+    }
+
+    // Extract text content (same pattern as your code)
+    const text = docs
+      .map((doc) => doc.pageContent)
+      .join('\n\n')
+      .trim();
+
+    if (text && text.length > 10) {
+      console.log(`✅ LangChain PDFLoader extracted ${text.length} characters`);
+      return text;
+    }
+
+    throw new Error('PDF appears to be empty or contains no readable text');
+  } finally {
+    // Clean up temporary file
+    try {
+      await fs.unlink(tmpPath);
+    } catch {}
+    try {
+      await fs.rmdir(tmpDir);
+    } catch {}
+  }
+};
+
 export const chunkDocument = async (
   documentId: string,
   content: string,
 ): Promise<DocumentChunk[]> => {
+  // Use the same text splitter approach as your working code
   const textSplitter = new RecursiveCharacterTextSplitter({
     chunkSize: 1000,
     chunkOverlap: 200,
@@ -16,13 +67,12 @@ export const chunkDocument = async (
   });
 
   const chunks = await textSplitter.splitText(content);
-
   let currentChar = 0;
+
   return chunks.map((chunk, index) => {
     const startChar = currentChar;
     const endChar = currentChar + chunk.length;
     currentChar = endChar;
-
     return {
       id: `${documentId}-chunk-${index}`,
       documentId,
@@ -36,95 +86,79 @@ export const chunkDocument = async (
   });
 };
 
-// Extract text from an uploaded file
 export const extractTextFromFile = async (file: File): Promise<string> => {
   // Plain text
-  if (file.type === 'text/plain') {
-    return await file.text();
-  }
+  if (file.type === 'text/plain') return await file.text();
 
   // Markdown
   if (file.type === 'text/markdown' || file.name.endsWith('.md')) {
     return await file.text();
   }
 
-  // CSV -> simple human-readable formatting
+  // CSV
   if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
     const csvText = await file.text();
-    const lines = csvText.split('\n');
-    const headers = lines[0]?.split(',') ?? [];
+    if (csvText.trim().length < 10) {
+      throw new Error('CSV file appears to be empty');
+    }
 
-    let formattedText = `CSV Document: ${file.name}\n\n`;
-    formattedText += `Headers: ${headers.join(', ')}\n\n`;
-    formattedText += `Data:\n`;
+    // Try LangChain CSV loader
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paperlm-'));
+    const tmpPath = path.join(tmpDir, `upload-${Date.now()}.csv`);
 
-    lines.slice(1).forEach((line, index) => {
-      if (line.trim()) {
-        const values = line.split(',');
-        formattedText += `Row ${index + 1}:\n`;
-        headers.forEach((header, i) => {
-          formattedText += `  ${header}: ${values[i] || ''}\n`;
-        });
-        formattedText += '\n';
+    try {
+      await fs.writeFile(tmpPath, csvText, 'utf8');
+      const { CSVLoader } = await import(
+        '@langchain/community/document_loaders/fs/csv'
+      );
+      const loader = new CSVLoader(tmpPath);
+      const docs = await loader.load();
+
+      if (docs && docs.length > 0) {
+        return docs
+          .map((d) => d.pageContent)
+          .join('\n\n')
+          .trim();
       }
-    });
+    } finally {
+      try {
+        await fs.unlink(tmpPath);
+      } catch {}
+      try {
+        await fs.rmdir(tmpDir);
+      } catch {}
+    }
 
-    return formattedText;
+    throw new Error('Failed to process CSV file');
   }
 
-  // DOCX (basic placeholder)
+  // DOCX
   if (
     file.type ===
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
     file.name.endsWith('.docx')
   ) {
-    return `DOCX Document: ${file.name}\n\nNote: DOCX processing requires additional libraries. Please convert to PDF or TXT for full text extraction.`;
-  }
-
-  // PDF processing with fallback approaches
-  if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-    console.log('Processing PDF file:', file.name);
     const arrayBuffer = await file.arrayBuffer();
-
-    // First, try pdf-parse as it's simpler and faster
-    try {
-      const pdfParse = await import('pdf-parse');
-      const data = await pdfParse.default(Buffer.from(arrayBuffer));
-      console.log('PDF parsed successfully with pdf-parse');
-      return data.text.trim();
-    } catch (error) {
-      console.warn('pdf-parse failed, trying LangChain PDFLoader:', error);
-    }
-
-    // Fallback to LangChain PDFLoader with temporary file
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paperlm-'));
-    const tmpPath = path.join(tmpDir, `upload-${Date.now()}.pdf`);
-    await fs.writeFile(tmpPath, Buffer.from(arrayBuffer));
+    const tmpPath = path.join(tmpDir, `upload-${Date.now()}.docx`);
 
     try {
-      console.log('Trying LangChain PDFLoader...');
-      
-      // Dynamic import to avoid loading heavy deps at module load time
-      const { PDFLoader } = await import(
-        '@langchain/community/document_loaders/fs/pdf'
+      await fs.writeFile(tmpPath, Buffer.from(arrayBuffer));
+      const { DocxLoader } = await import(
+        '@langchain/community/document_loaders/fs/docx'
       );
-
-      // Use pdfjs-dist backend to avoid pdf-parse FS issues
-      const loader = new PDFLoader(tmpPath, {
-        splitPages: false,
-        // Supply pdfjs dynamically
-        pdfjs: () => import('pdfjs-dist'),
-      });
-
+      const loader = new DocxLoader(tmpPath);
       const docs = await loader.load();
-      const text = docs.map((d) => d.pageContent).join('\n');
-      console.log('PDF parsed successfully with LangChain PDFLoader');
-      return text.trim();
-    } catch (error) {
-      console.error('LangChain PDFLoader also failed:', error);
-      throw new Error(`Failed to extract text from PDF: ${error.message}`);
+
+      if (!docs || docs.length === 0) {
+        throw new Error('No content extracted from DOCX file');
+      }
+
+      return docs
+        .map((d) => d.pageContent)
+        .join('\n\n')
+        .trim();
     } finally {
-      // Cleanup temp file and directory
       try {
         await fs.unlink(tmpPath);
       } catch {}
@@ -134,5 +168,12 @@ export const extractTextFromFile = async (file: File): Promise<string> => {
     }
   }
 
-  throw new Error(`Unsupported file type: ${file.type}`);
+  // PDF - Use LangChain PDFLoader (same as your working approach)
+  if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+    return await extractPDFText(file);
+  }
+
+  throw new Error(
+    `Unsupported file type: ${file.type}. Supported formats: PDF, DOCX, CSV, TXT, MD`,
+  );
 };
