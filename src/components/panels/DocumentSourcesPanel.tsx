@@ -7,9 +7,9 @@ import { Document } from '@/types';
 import { useFreemium } from '@/contexts/FreemiumContext';
 import { useDocumentContext } from '@/contexts/DocumentContext';
 import { Button } from '../ui';
-import AddContentDialog from '../AddContentDialog';
+import FileUploadDialog from '../FileUploadDialog';
 
-export default function SourcesPanel() {
+export default function DocumentSourcesPanel() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const { canPerformAction, updateUsage, showUpgradeModal, usage } = useFreemium();
   const { setHasDocuments, setDocumentCount } = useDocumentContext();
@@ -253,7 +253,7 @@ export default function SourcesPanel() {
         {/* Add Content Buttons - Horizontal Layout */}
         <div className="mb-4 space-y-3">
           {/* Upload Files - Primary */}
-          <AddContentDialog
+          <FileUploadDialog
             onFileUpload={handleFiles}
             onTextSubmit={handleTextSubmit}
             onUrlSubmit={handleUrlSubmit}
@@ -268,7 +268,7 @@ export default function SourcesPanel() {
                 <p className="text-xs text-gray-500">Upload files, paste text, add URLs</p>
               </div>
             </button>
-          </AddContentDialog>
+          </FileUploadDialog>
         </div>
 
         {/* Documents List */}
