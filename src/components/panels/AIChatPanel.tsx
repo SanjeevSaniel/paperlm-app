@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, ExternalLink, Loader2 } from 'lucide-react';
 import { ChatMessage } from '@/types';
@@ -45,20 +45,22 @@ export default function AIChatPanel() {
       try {
         const sessionData = getSessionData();
         if (sessionData && sessionData.chatMessages.length > 0) {
-          const parsedMessages = sessionData.chatMessages.map((msg: any) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp),
-          }));
+          const parsedMessages = sessionData.chatMessages.map(
+            (msg: ChatMessage) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp),
+            }),
+          );
           setMessages(parsedMessages);
         } else {
           const savedMessages = localStorage.getItem('paperlm_chat_history');
           if (savedMessages) {
-            const parsedMessages = JSON.parse(savedMessages).map(
-              (msg: any) => ({
-                ...msg,
-                timestamp: new Date(msg.timestamp),
-              }),
-            );
+            const parsedMessages = (
+              JSON.parse(savedMessages) as ChatMessage[]
+            ).map((msg: ChatMessage) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp),
+            }));
             setMessages(parsedMessages);
             updateSessionChatMessages(parsedMessages);
           }
@@ -69,7 +71,7 @@ export default function AIChatPanel() {
           if (response.ok) {
             const { messages: apiMessages } = await response.json();
             if (apiMessages && apiMessages.length > 0) {
-              const formattedMessages = apiMessages.map((msg: any) => ({
+              const formattedMessages = apiMessages.map((msg: ChatMessage) => ({
                 ...msg,
                 timestamp: new Date(msg.timestamp),
               }));
@@ -138,7 +140,7 @@ export default function AIChatPanel() {
   }, [messages, isInitialized]);
 
   // Textarea auto-resize
-  const adjustTextareaHeight = () => {
+  const adjustTextareaHeight = useCallback(() => {
     if (!textareaRef.current) return;
     const textarea = textareaRef.current;
     textarea.style.height = 'auto';
@@ -155,23 +157,23 @@ export default function AIChatPanel() {
       Math.min(textarea.scrollHeight, maxHeight),
     );
     textarea.style.height = newHeight + 'px';
-  };
+  }, []);
 
   useEffect(() => {
     adjustTextareaHeight();
-  }, [inputValue]);
+  }, [inputValue, adjustTextareaHeight]);
 
-  const resetTextareaHeight = () => {
+  const resetTextareaHeight = useCallback(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.minHeight = '48px';
       adjustTextareaHeight();
     }
-  };
+  }, [adjustTextareaHeight]);
 
   useEffect(() => {
     resetTextareaHeight();
-  }, []);
+  }, [resetTextareaHeight]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -180,7 +182,7 @@ export default function AIChatPanel() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () =>
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
+  }, [resetTextareaHeight]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -259,19 +261,18 @@ export default function AIChatPanel() {
   };
 
   return (
-    <div className='h-full min-h-0 grid grid-rows-[auto,minmax(0,1fr),auto] overflow-hidden'>
+    <div className='h-full min-h-0 flex flex-col overflow-hidden'>
       {/* Header */}
-      <div className='px-4 py-3 border-b border-amber-100/80 bg-amber-50/30'>
+      <div className='px-4 py-3 border-b border-amber-100/80 bg-amber-50/30 shrink-0'>
         <p className='text-sm text-gray-600'>
           Ask questions about your uploaded documents
         </p>
       </div>
 
-      {/* Middle scrollable row */}
-      <div className='min-h-0'>
-        <div
-          className='h-full min-h-0 overflow-y-auto overflow-x-hidden p-4 space-y-3 relative'
-          style={{ maxHeight: '100%' }}>
+      {/* Messages section (bounded) */}
+      <div className='flex-1 min-h-0'>
+        {/* Actual scroll area */}
+        <div className='h-full min-h-0 overflow-y-auto overflow-x-hidden p-4 space-y-3 relative'>
           <AIAssistantAnimation
             isVisible={showAnimation}
             onComplete={() => setShowAnimation(false)}
@@ -382,7 +383,7 @@ export default function AIChatPanel() {
       </div>
 
       {/* Input */}
-      <div className='border-t border-slate-200 p-4 bg-white/50'>
+      <div className='border-t border-slate-200 p-4 bg-white/50 shrink-0'>
         <form
           onSubmit={handleSubmit}
           className='w-full'>
