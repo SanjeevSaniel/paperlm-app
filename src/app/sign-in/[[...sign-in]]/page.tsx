@@ -1,19 +1,19 @@
 import { SignIn } from '@clerk/nextjs';
-
-export default function SignInPage() {
+ 
+export default function Page() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50/60 via-amber-50/50 to-yellow-50/40 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Welcome to PaperLM</h1>
-          <p className="text-slate-600">Sign in to access your documents and AI-powered analysis</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h1>
+          <p className="text-gray-600">Sign in to continue to PaperLM</p>
         </div>
         <SignIn 
           appearance={{
             elements: {
               rootBox: "mx-auto",
-              card: "shadow-xl border border-slate-200/50 rounded-2xl",
-            },
+              card: "shadow-xl border-0",
+            }
           }}
         />
       </div>
