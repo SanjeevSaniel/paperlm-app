@@ -155,17 +155,25 @@ export function deleteOldCleanedRecords(olderThanDays = 30): number {
 
 export function getCleanupStats() {
   const database = getDatabase();
-  
-  const totalStmt = database.prepare('SELECT COUNT(*) as count FROM cleanup_records');
-  const cleanedStmt = database.prepare('SELECT COUNT(*) as count FROM cleanup_records WHERE cleaned = TRUE');
-  const expiredStmt = database.prepare('SELECT COUNT(*) as count FROM cleanup_records WHERE expiresAt <= ? AND cleaned = FALSE');
-  
+
+  type CountResult = { count: number };
+
+  const totalStmt = database.prepare(
+    'SELECT COUNT(*) as count FROM cleanup_records',
+  );
+  const cleanedStmt = database.prepare(
+    'SELECT COUNT(*) as count FROM cleanup_records WHERE cleaned = TRUE',
+  );
+  const expiredStmt = database.prepare(
+    'SELECT COUNT(*) as count FROM cleanup_records WHERE expiresAt <= ? AND cleaned = FALSE',
+  );
+
   const now = new Date().toISOString();
-  
-  const total = (totalStmt.get() as any).count;
-  const cleaned = (cleanedStmt.get() as any).count;
-  const expired = (expiredStmt.get(now) as any).count;
-  
+
+  const total = (totalStmt.get() as CountResult).count;
+  const cleaned = (cleanedStmt.get() as CountResult).count;
+  const expired = (expiredStmt.get(now) as CountResult).count;
+
   return {
     total,
     cleaned,

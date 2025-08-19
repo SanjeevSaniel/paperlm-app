@@ -1,58 +1,48 @@
-export const runtime = 'nodejs';
-
-import { NextRequest } from 'next/server';
-import { extractTextFromFile, chunkDocument } from '@/lib/documentProcessing';
+import { chunkDocument, extractTextFromFile } from '@/lib/documentProcessing';
 import { addDocuments } from '@/lib/qdrant';
-import { saveDocument } from '@/lib/database';
-import { withFreemium } from '@/lib/freemium';
-import { uploadFile } from '@/lib/fileStorage';
-import { addCleanupRecord } from '@/lib/cleanupDatabase';
+import { NextRequest, NextResponse } from 'next/server';
 
-export const POST = withFreemium(async (request: NextRequest, user, usage) => {
-  const startTime = Date.now();
-  console.log('Upload request received for user:', user?.userId || 'anonymous', 'sessionId:', usage.sessionId);
-  
+export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const file = formData.get('file') as File;
-    if (!file) throw new Error('No file provided');
+    const file = formData.get('file') as File | null;
 
-    console.log('Processing file:', file.name, 'size:', file.size, 'type:', file.type);
-
-    // Add file size check
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      throw new Error(`File too large. Maximum size is ${maxSize / 1024 / 1024}MB`);
+    if (!file) {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // Upload file to storage first
-    console.log('Uploading file to storage...');
-    const storageResult = await uploadFile(file);
-    console.log('File uploaded to storage:', storageResult.storageProvider, storageResult.fileId);
+    console.log(
+      `📝 Processing file: ${file.name}, Type: ${file.type}, Size: ${file.size}`,
+    );
 
-    const content = await extractTextFromFile(file);
-    console.log('Extracted content length:', content.length);
+    // Extract text content
+    const text = await extractTextFromFile(file);
 
-    const documentId = `doc-${Date.now()}-${usage.sessionId}`;
-    const chunks = await chunkDocument(documentId, content);
-    console.log('Generated chunks:', chunks.length);
-
-    if (user) {
-      saveDocument({
-        id: documentId,
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        uploadedAt: new Date().toISOString(),
-        userId: user.userId,
-        // Add storage information
-        storageFileId: storageResult.fileId,
-        storageUrl: storageResult.url,
-        storageProvider: storageResult.storageProvider,
-      });
+    if (!text || text.trim().length < 3) {
+      return NextResponse.json(
+        {
+          error:
+            'No readable text found in input. Please provide meaningful content.',
+        },
+        { status: 400 },
+      );
     }
 
-    const documents = chunks.map((chunk) => ({
+    console.log(`✅ Extracted ${text.length} characters from ${file.name}`);
+
+    // Generate unique document ID
+    const documentId = `doc-${Date.now()}-${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+
+    // Chunk the document
+    const chunks = await chunkDocument(documentId, text);
+    console.log(
+      `📚 Created ${chunks.length} chunks for document ${documentId}`,
+    );
+
+    // Prepare documents for vector storage
+    const docs = chunks.map((chunk) => ({
       pageContent: chunk.content,
       metadata: {
         documentId: chunk.documentId,
@@ -61,56 +51,36 @@ export const POST = withFreemium(async (request: NextRequest, user, usage) => {
         startChar: chunk.metadata.startChar,
         endChar: chunk.metadata.endChar,
         fileName: file.name,
-        fileType: file.type,
+        fileType: file.type || 'text/plain',
         fileSize: file.size,
+        uploadedAt: new Date().toISOString(),
+        // Add special flag for text input
+        isTextInput: file.name === 'text-input.txt',
       },
     }));
 
-    console.log('Calling addDocuments with options:', {
-      sessionId: usage.sessionId,
-      isAnonymous: !usage.isAuthenticated,
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size,
-    });
+    // Add to vector database
+    console.log(
+      `🔍 Adding ${docs.length} document chunks to vector database...`,
+    );
+    await addDocuments(docs);
+    console.log(`✅ Successfully indexed ${docs.length} chunks`);
 
-    await addDocuments(documents, {
-      sessionId: usage.sessionId,
-      isAnonymous: !usage.isAuthenticated,
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size,
-    });
-
-    // Add cleanup record for 48-hour deletion
-    const uploadedAt = new Date();
-    const expiresAt = new Date(uploadedAt.getTime() + (48 * 60 * 60 * 1000)); // 48 hours
-    
-    addCleanupRecord({
-      documentId,
-      sessionId: usage.sessionId,
-      cloudinaryPublicId: storageResult.publicId,
-      uploadedAt: uploadedAt.toISOString(),
-      expiresAt: expiresAt.toISOString(),
-      isAnonymous: !usage.isAuthenticated,
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size,
-    });
-
-    console.log('Document upload completed successfully');
-
-    return {
+    return NextResponse.json({
       documentId,
       fileName: file.name,
       chunksCount: chunks.length,
-    };
+      textLength: text.length,
+      isTextInput: file.name === 'text-input.txt',
+      success: true,
+    });
   } catch (error) {
-    console.error('Upload API error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Upload failed';
-    return Response.json(
-      { error: errorMessage },
-      { status: 500 }
+    console.error('❌ Upload processing error:', error);
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : 'Upload failed',
+      },
+      { status: 500 },
     );
   }
-}, 'upload');
+}

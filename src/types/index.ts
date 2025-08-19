@@ -29,17 +29,26 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   citations?: Citation[];
+  isAuthPrompt?: boolean;
 }
 
 export interface Citation {
   id: string;
   documentId: string;
   documentName: string;
+  documentType?: string;
+  sourceUrl?: string;
+  loader?: string;
   chunkId: string;
+  chunkIndex: number;
   content: string;
+  fullContent: string;
   startChar: number;
   endChar: number;
   relevanceScore: number;
+  uploadedAt?: string;
+  author?: string;
+  publishedAt?: string;
 }
 
 export interface SearchResult {

@@ -14,6 +14,9 @@ export interface SessionData {
   notebookNotes: NotebookNote[];
   sessionId: string;
   isAuthenticated: boolean;
+  userId?: string;
+  userEmail?: string;
+  cloudinaryUrls?: Record<string, string>; // documentId -> cloudinary URL mapping
   createdAt: string;
   expiresAt: string;
 }
@@ -41,6 +44,9 @@ export function saveSessionData(data: Partial<SessionData>): void {
       notebookNotes: data.notebookNotes || existingData?.notebookNotes || [],
       sessionId: data.sessionId || existingData?.sessionId || generateSessionId(),
       isAuthenticated: data.isAuthenticated || existingData?.isAuthenticated || false,
+      userId: data.userId || existingData?.userId,
+      userEmail: data.userEmail || existingData?.userEmail,
+      cloudinaryUrls: data.cloudinaryUrls || existingData?.cloudinaryUrls || {},
       createdAt: existingData?.createdAt || now.toISOString(),
       expiresAt: expiresAt.toISOString(),
     };
@@ -113,4 +119,33 @@ export function getSessionId(): string {
   const newSessionId = generateSessionId();
   saveSessionData({ sessionId: newSessionId });
   return newSessionId;
+}
+
+// Update user authentication info
+export function updateUserAuth(userId: string, userEmail: string): void {
+  const sessionData = getSessionData();
+  saveSessionData({ 
+    ...sessionData, 
+    isAuthenticated: true, 
+    userId, 
+    userEmail 
+  });
+}
+
+// Update Cloudinary URLs for documents
+export function updateCloudinaryUrl(documentId: string, cloudinaryUrl: string): void {
+  const sessionData = getSessionData();
+  const cloudinaryUrls = sessionData?.cloudinaryUrls || {};
+  cloudinaryUrls[documentId] = cloudinaryUrl;
+  
+  saveSessionData({ 
+    ...sessionData, 
+    cloudinaryUrls 
+  });
+}
+
+// Get Cloudinary URL for a document
+export function getCloudinaryUrl(documentId: string): string | null {
+  const sessionData = getSessionData();
+  return sessionData?.cloudinaryUrls?.[documentId] || null;
 }
