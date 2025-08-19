@@ -376,23 +376,36 @@ export default function AIChatPanel() {
   return (
     <div className='h-full min-h-0 flex flex-col overflow-hidden'>
       {/* Header */}
-      <div className='px-4 py-3 border-b border-amber-100/80 bg-amber-50/30 shrink-0'>
+      <div className='px-4 py-2 border-b border-amber-100/80 bg-amber-50/30 shrink-0'>
         <div className='flex items-center justify-between'>
-          <div className='flex-1'>
-            <h3 className='text-base font-semibold text-gray-900 mb-1'>
-              AI Chat Assistant
-            </h3>
-            <p className='text-sm text-gray-600'>
-              {hasDocuments 
-                ? 'Ready to help! Ask me anything about your documents'
-                : 'Upload documents in Sources panel to start chatting'
-              }
-            </p>
-          </div>
+          <p className='text-sm text-gray-600'>
+            {hasDocuments 
+              ? 'Ready to help! Ask me anything about your documents'
+              : 'Upload documents in Sources panel to start intelligent conversations'
+            }
+          </p>
           <div className='flex items-center gap-2'>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${canUseService ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-              {usageCount}/{maxFreeUsage} queries
-            </span>
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border backdrop-blur-sm ${
+              user 
+                ? 'bg-blue-50/80 text-blue-700 border-blue-200/50' 
+                : canUseService 
+                  ? 'bg-green-50/80 text-green-700 border-green-200/50' 
+                  : 'bg-red-50/80 text-red-700 border-red-200/50'
+            }`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                user 
+                  ? 'bg-blue-500' 
+                  : canUseService 
+                    ? 'bg-green-500' 
+                    : 'bg-red-500'
+              }`}></div>
+              <span>
+                {user 
+                  ? 'Unlimited' 
+                  : `${usageCount}/${maxFreeUsage} queries`
+                }
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -736,7 +749,7 @@ export default function AIChatPanel() {
         </form>
         
         {/* Instructions */}
-        <div className='pt-1'>
+        <div className='pt-0.5 pb-0.5'>
           <p className='text-xs text-slate-500 text-center'>
             Press Enter to send • Upload docs in Sources panel
           </p>
