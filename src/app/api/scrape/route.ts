@@ -1,6 +1,7 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { GoogleGenAI } from '@google/genai';
 import { chunkDocument } from '@/lib/documentProcessing';
 import { addDocuments } from '@/lib/qdrant';
 import { loadWebsiteWithLangChain } from '@/lib/langchainRecursive';
@@ -18,6 +19,69 @@ type ScrapeBody = {
   limit?: number;
   loader?: 'recursive' | 'cheerio' | 'puppeteer';
 };
+
+// Helper function to extract video ID from YouTube URL
+function extractVideoId(url: string): string | null {
+  const regExp =
+    /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return match && match[2].length === 11 ? match[2] : null;
+}
+
+// Gemini AI summarization function with thinking enabled
+async function generateGeminiSummary(
+  title: string,
+  transcript: string,
+): Promise<string | null> {
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.warn('Gemini API key not found, skipping YouTube summarization');
+      return null;
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+
+    const prompt = `Please create a comprehensive, well-structured summary of this YouTube video transcript.
+
+Video Title: ${title}
+
+Please format your response with:
+1. 🎯 Key Points (5-8 main points)
+2. 📝 Detailed Summary (500-800 words)
+3. 💡 Key Insights & Takeaways
+4. 🎤 Notable Quotes (if any)
+5. 🏷️ Topics Covered
+6. ⚡ Action Items (if applicable)
+
+Make the summary engaging, well-organized, and capture the essence of the video content.
+
+Transcript: ${transcript.slice(0, 15000)}${
+      transcript.length > 15000
+        ? '\n\n[Transcript truncated for processing]'
+        : ''
+    }`;
+
+    // Fixed: Use simple string content instead of complex parts structure
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        systemInstruction:
+          'You are an expert content analyst and summarizer. Create comprehensive, engaging summaries that capture the essence of video content.',
+        thinkingConfig: {
+          // Remove thinkingBudget to enable thinking
+        },
+      },
+    });
+
+    // Fixed: Handle potential undefined response with null coalescing
+    return response.text ?? null;
+  } catch (error) {
+    console.error('Error generating Gemini summary:', error);
+    return null;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,6 +104,51 @@ export async function POST(request: NextRequest) {
     if (type === 'youtube') {
       scraped = await scrapeYouTubeContent(url);
       fileType = 'video/youtube';
+
+      // Generate AI summary for YouTube videos using Gemini
+      try {
+        const videoId = extractVideoId(url);
+        if (videoId && scraped.content && scraped.content.length > 500) {
+          // Use Gemini for YouTube video summarization with thinking enabled
+          const geminiSummary = await generateGeminiSummary(
+            scraped.title,
+            scraped.content,
+          );
+
+          if (geminiSummary) {
+            // Create enhanced content with both summary and original transcript
+            const enhancedContent = `# 📹 AI-Generated Video Summary (Gemini)
+
+${geminiSummary}
+
+---
+
+# 📄 Original Transcript
+
+${scraped.content}`;
+
+            scraped = {
+              title: `📹 ${scraped.title} - AI Summary`,
+              content: enhancedContent,
+              metadata: {
+                ...scraped.metadata,
+                originalTranscript: scraped.content,
+                aiSummarized: true,
+                summaryMethod: 'gemini',
+                summaryTimestamp: new Date().toISOString(),
+                hasAISummary: true,
+                thinkingEnabled: true,
+              },
+            };
+          }
+        }
+      } catch (summaryError) {
+        console.warn(
+          'YouTube summarization failed, using original transcript:',
+          summaryError,
+        );
+        // Continue with original transcript if summarization fails
+      }
     } else {
       const order =
         loader === 'puppeteer'
