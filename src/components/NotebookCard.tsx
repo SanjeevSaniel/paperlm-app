@@ -62,8 +62,36 @@ const NotebookCard: React.FC<NotebookCardProps> = ({ note, onView, isNew }) => {
       initial={isNew ? { opacity: 0, scale: 0.9, y: 20 } : { opacity: 1 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className='group'>
-      <Card className='relative overflow-hidden border-0 shadow-sm hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-purple-50/50 via-white to-blue-50/30'>
+      className='group relative'>
+      
+      {/* Animated border for new cards */}
+      {isNew && (
+        <motion.div
+          className='absolute inset-0 rounded-lg overflow-hidden'
+          style={{
+            background: `linear-gradient(90deg, 
+              rgba(147, 51, 234, 0.6), 
+              rgba(59, 130, 246, 0.6), 
+              rgba(16, 185, 129, 0.6), 
+              rgba(147, 51, 234, 0.6)
+            )`,
+            backgroundSize: '300% 100%',
+          }}
+          animate={{
+            backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+          }}
+          transition={{
+            duration: 3,
+            repeat: 2, // Highlight for 6 seconds (3s x 2)
+            ease: 'linear',
+          }}
+        />
+      )}
+      
+      {/* Inner card with padding for border effect */}
+      <Card className={`relative overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-purple-50/50 via-white to-blue-50/30 ${
+        isNew ? 'border-2 border-transparent m-0.5' : 'border-0'
+      }`}>
         {/* New badge for auto-generated notes */}
         {isNew && (
           <motion.div
