@@ -12,9 +12,13 @@ import {
   BookOpen,
   Copy,
   Plus,
+  ArrowUpRight,
+  Trash2,
+  MessageSquarePlus,
 } from 'lucide-react';
 import { ChatMessage } from '@/types';
 import { useDocumentContext } from '@/contexts/DocumentContext';
+import { useNotebookContext } from '@/contexts/NotebookContext';
 import { useUsage } from '@/contexts/UsageContext';
 import { useUser } from '@clerk/nextjs';
 import AIAssistantAnimation from '../AIAssistantAnimation';
@@ -52,8 +56,34 @@ export default function AIChatPanel() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { hasDocuments, documentCount } = useDocumentContext();
+  const { triggerRefresh } = useNotebookContext();
   const { canUseService, incrementUsage, usageCount, maxFreeUsage } = useUsage();
   const { user } = useUser();
+
+  // Clear chat functionality
+  const clearChat = () => {
+    setMessages([]);
+    updateSessionChatMessages([]);
+    localStorage.setItem('paperlm_chat_history', JSON.stringify([]));
+    toast.success('Chat cleared!', {
+      duration: 2000,
+      icon: '🗑️',
+    });
+  };
+
+  // New chat session functionality
+  const newChatSession = () => {
+    setMessages([]);
+    updateSessionChatMessages([]);
+    localStorage.setItem('paperlm_chat_history', JSON.stringify([]));
+    // Generate new session ID
+    const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('paperlm_session_id', newSessionId);
+    toast.success('New chat session started!', {
+      duration: 2000,
+      icon: '💬',
+    });
+  };
 
   // Generate context-aware loading messages based on user query
   const getLoadingMessages = useCallback((query: string) => {
@@ -213,6 +243,9 @@ export default function AIChatPanel() {
       // Add to existing notes
       const updatedNotes = [newNote, ...existingNotes];
       updateSessionNotebookNotes(updatedNotes);
+      
+      // Trigger notebook refresh to show new note immediately
+      triggerRefresh();
 
       toast.success('Added to notebook!', {
         duration: 2000,
@@ -380,11 +413,34 @@ export default function AIChatPanel() {
         <div className='flex items-center justify-between'>
           <p className='text-sm text-gray-600'>
             {hasDocuments 
-              ? 'Ready to help! Ask me anything about your documents'
-              : 'Upload documents in Sources panel to start intelligent conversations'
+              ? '🧠 AI Assistant ready • Ask me anything about your uploaded documents'
+              : '📄 Upload documents in Sources panel to unlock intelligent AI conversations'
             }
           </p>
-          <div className='flex justify-end'>
+          <div className='flex items-center gap-2'>
+            {/* Chat Management Buttons */}
+            {messages.length > 0 && (
+              <>
+                <motion.button
+                  onClick={clearChat}
+                  className='flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-all duration-200'
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  title='Clear current chat'>
+                  <Trash2 className='w-3 h-3' />
+                  <span className='hidden sm:inline'>Clear</span>
+                </motion.button>
+                <motion.button
+                  onClick={newChatSession}
+                  className='flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all duration-200'
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  title='Start new chat session'>
+                  <MessageSquarePlus className='w-3 h-3' />
+                  <span className='hidden sm:inline'>New</span>
+                </motion.button>
+              </>
+            )}
             <motion.div 
               className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border backdrop-blur-sm transition-all duration-300 ${
                 user 
@@ -519,93 +575,99 @@ export default function AIChatPanel() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.3, ease: 'easeOut' }}
-                            className='group bg-gradient-to-r from-purple-50/50 to-blue-50/30 border border-purple-200/50 rounded-lg p-3 hover:from-purple-100/60 hover:to-blue-100/40 hover:border-purple-300/60 transition-all duration-200 hover:shadow-sm'>
-                            <div className='flex items-start justify-between'>
-                              <div className='flex-1 min-w-0'>
-                                <div className='flex items-center gap-2 mb-2'>
-                                  <div className='flex items-center gap-1.5'>
-                                    <div className='w-5 h-5 rounded bg-purple-100 flex items-center justify-center'>
-                                      <ExternalLink className='w-3 h-3 text-purple-600' />
-                                    </div>
-                                    <span className='text-xs font-medium text-purple-900 truncate'>
-                                      {citation.documentName}
-                                    </span>
+                            className='group bg-gradient-to-r from-purple-50/50 to-blue-50/30 border border-purple-200/50 rounded-lg overflow-hidden hover:from-purple-100/60 hover:to-blue-100/40 hover:border-purple-300/60 transition-all duration-200 hover:shadow-sm'>
+                            
+                            {/* Header section */}
+                            <div className='px-3 py-2 border-b border-purple-200/30 bg-purple-50/30'>
+                              <div className='flex items-center justify-between gap-2'>
+                                <div className='flex items-center gap-2 min-w-0 flex-1'>
+                                  <div className='w-4 h-4 rounded bg-purple-100 flex items-center justify-center flex-shrink-0'>
+                                    <ExternalLink className='w-2.5 h-2.5 text-purple-600' />
                                   </div>
-                                  <div className='flex items-center gap-1'>
-                                    <span className='text-xs bg-purple-200 text-purple-800 px-1.5 py-0.5 rounded-full font-medium'>
-                                      {Math.round(
-                                        citation.relevanceScore * 100,
+                                  <span className='text-xs font-medium text-purple-900 truncate'>
+                                    {citation.documentName}
+                                  </span>
+                                </div>
+                                <div className='flex items-center gap-1 flex-shrink-0'>
+                                  <span className='text-xs bg-purple-200 text-purple-800 px-1.5 py-0.5 rounded-full font-medium'>
+                                    {Math.round(citation.relevanceScore * 100)}%
+                                  </span>
+                                  {citation.documentType && (
+                                    <span className='text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full'>
+                                      {citation.documentType}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Content section */}
+                            <div className='p-3'>
+                              <div className='grid grid-cols-[1fr_auto] gap-3 items-start'>
+                                {/* Citation content */}
+                                <div className='min-w-0'>
+                                  <blockquote className='text-xs text-gray-700 leading-relaxed mb-2 italic border-l-2 border-purple-200 pl-2 overflow-hidden break-words'>
+                                    &quot;{citation.content}&quot;
+                                  </blockquote>
+
+                                  {/* Author and publication info */}
+                                  {(citation.author || citation.publishedAt) && (
+                                    <div className='flex items-center gap-2 text-xs text-gray-500'>
+                                      {citation.author && (
+                                        <span className='truncate'>By {citation.author}</span>
                                       )}
-                                      %
-                                    </span>
-                                    {citation.documentType && (
-                                      <span className='text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full'>
-                                        {citation.documentType}
-                                      </span>
-                                    )}
-                                  </div>
+                                      {citation.author && citation.publishedAt && (
+                                        <span className='text-gray-400'>•</span>
+                                      )}
+                                      {citation.publishedAt && (
+                                        <span className='whitespace-nowrap'>
+                                          {new Date(citation.publishedAt).toLocaleDateString()}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
 
-                                <p className='text-xs text-gray-700 leading-relaxed mb-2 line-clamp-3'>
-                                  &quot;{citation.content}&quot;
-                                </p>
-
-                                {(citation.author || citation.publishedAt) && (
-                                  <div className='flex items-center gap-2 text-xs text-gray-500 mb-2'>
-                                    {citation.author && (
-                                      <span>By {citation.author}</span>
-                                    )}
-                                    {citation.author &&
-                                      citation.publishedAt && <span>•</span>}
-                                    {citation.publishedAt && (
-                                      <span>
-                                        {new Date(
-                                          citation.publishedAt,
-                                        ).toLocaleDateString()}
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className='flex flex-col gap-1 ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200'>
-                                <motion.button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCitationClick(citation);
-                                  }}
-                                  whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
-                                  className='p-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-md transition-colors'
-                                  title='Add to Notebook'>
-                                  <Plus className='w-3 h-3' />
-                                </motion.button>
-
-                                <motion.button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCitationCopy(citation);
-                                  }}
-                                  whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
-                                  className='p-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md transition-colors'
-                                  title='Copy Citation'>
-                                  <Copy className='w-3 h-3' />
-                                </motion.button>
-
-                                {citation.sourceUrl && (
+                                {/* Action buttons */}
+                                <div className='flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0'>
                                   <motion.button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      window.open(citation.sourceUrl, '_blank');
+                                      handleCitationClick(citation);
                                     }}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
-                                    className='p-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-md transition-colors'
-                                    title='Open Source'>
-                                    <BookOpen className='w-3 h-3' />
+                                    className='p-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-md transition-colors'
+                                    title='Add to Notebook'>
+                                    <Plus className='w-3 h-3' />
                                   </motion.button>
-                                )}
+
+                                  <motion.button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCitationCopy(citation);
+                                    }}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    className='p-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md transition-colors'
+                                    title='Copy Citation'>
+                                    <Copy className='w-3 h-3' />
+                                  </motion.button>
+
+                                  {citation.sourceUrl && (
+                                    <motion.button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.open(citation.sourceUrl, '_blank');
+                                      }}
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      className='p-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-md transition-colors'
+                                      title='Open Source Link'>
+                                      <ArrowUpRight className='w-3 h-3' />
+                                    </motion.button>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </motion.div>
@@ -777,9 +839,9 @@ export default function AIChatPanel() {
         </form>
         
         {/* Instructions */}
-        <div className='pt-0.5 pb-1'>
+        <div className='pt-1'>
           <p className='text-xs text-slate-500 text-center'>
-            Press Enter to send • Upload docs in Sources panel
+            Press Enter to send • {hasDocuments ? 'Ask questions, request summaries, or analyze content' : 'Add documents first to start chatting'}
           </p>
         </div>
       </div>
