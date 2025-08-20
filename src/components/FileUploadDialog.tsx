@@ -126,7 +126,7 @@ export default function FileUploadDialog({
                     Upload Files
                   </p>
                   <p className='text-xs text-gray-500'>
-                    PDF, TXT, CSV, DOCX up to 10MB each
+                    PDF, DOCX, TXT, CSV, MD, Images (JPG, PNG, etc.) up to 10MB each
                   </p>
                 </div>
               </motion.button>
@@ -212,14 +212,14 @@ export default function FileUploadDialog({
                     Drop files here or click to browse
                   </p>
                   <p className='text-xs text-gray-500 mb-4'>
-                    Supports PDF, TXT, CSV, DOCX up to 10MB each
+                    Supports PDF, DOCX, TXT, CSV, MD, Images (JPG, PNG, etc.) up to 10MB each
                   </p>
 
                   <label className='cursor-pointer'>
                     <input
                       type='file'
                       multiple
-                      accept='.pdf,.txt,.csv,.docx,.md'
+                      accept='.pdf,.txt,.csv,.docx,.md,.jpg,.jpeg,.png,.gif,.bmp,.webp'
                       onChange={handleFileSelect}
                       className='hidden'
                       id='file-upload-input'
