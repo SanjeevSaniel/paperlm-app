@@ -28,6 +28,20 @@ export function generateSessionId(): string {
   return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
+function createDefaultSessionData(): SessionData {
+  const now = new Date();
+  return {
+    documents: [],
+    chatMessages: [],
+    notebookNotes: [],
+    sessionId: generateSessionId(),
+    isAuthenticated: false,
+    cloudinaryUrls: {},
+    createdAt: now.toISOString(),
+    expiresAt: new Date(now.getTime() + SESSION_DURATION).toISOString(),
+  };
+}
+
 export function isSessionExpired(sessionData: SessionData): boolean {
   return new Date(sessionData.expiresAt) < new Date();
 }
@@ -89,24 +103,30 @@ export function clearSessionData(): void {
 }
 
 export function updateSessionDocuments(documents: Document[]): void {
-  const sessionData = getSessionData();
-  if (sessionData) {
-    saveSessionData({ ...sessionData, documents });
+  let sessionData = getSessionData();
+  if (!sessionData) {
+    sessionData = createDefaultSessionData();
   }
+  saveSessionData({ ...sessionData, documents });
 }
 
 export function updateSessionChatMessages(chatMessages: ChatMessage[]): void {
-  const sessionData = getSessionData();
-  if (sessionData) {
-    saveSessionData({ ...sessionData, chatMessages });
+  let sessionData = getSessionData();
+  if (!sessionData) {
+    sessionData = createDefaultSessionData();
   }
+  saveSessionData({ ...sessionData, chatMessages });
 }
 
 export function updateSessionNotebookNotes(notebookNotes: NotebookNote[]): void {
-  const sessionData = getSessionData();
-  if (sessionData) {
-    saveSessionData({ ...sessionData, notebookNotes });
+  let sessionData = getSessionData();
+  
+  if (!sessionData) {
+    sessionData = createDefaultSessionData();
   }
+  
+  const updatedData = { ...sessionData, notebookNotes };
+  saveSessionData(updatedData);
 }
 
 export function getSessionId(): string {

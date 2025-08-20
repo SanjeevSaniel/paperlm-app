@@ -210,8 +210,10 @@ export default function SmartNotebookPanel() {
 
   const generateAINotebookCards = useCallback(
     async (documents: Document[]) => {
+      console.log('🎯 generateAINotebookCards called with', documents.length, 'documents');
       try {
         for (const doc of documents) {
+          console.log('⚙️ Processing document:', doc.name, 'status:', doc.status);
           // Add to processing set
           setProcessingDocs((prev) => new Set(prev).add(doc.id));
 
@@ -325,12 +327,22 @@ export default function SmartNotebookPanel() {
         if (sessionData && sessionData.notebookNotes.length > 0) {
           // Convert session notes to local Note format
           const sessionNotes: Note[] = sessionData.notebookNotes.map(
-            (note) => ({
-              ...note,
-              type: 'summary' as const, // Default type for migrated notes
-              createdAt: note.createdAt,
-              updatedAt: note.updatedAt,
-            }),
+            (note) => {
+              // Determine note type based on title and content
+              let noteType: 'summary' | 'insight' | 'quote' = 'summary';
+              if (note.title.includes('Citation:') || note.content.includes('Citation Content')) {
+                noteType = 'quote';
+              } else if (note.title.includes('Insight') || note.content.includes('## 💡')) {
+                noteType = 'insight';
+              }
+              
+              return {
+                ...note,
+                type: noteType,
+                createdAt: note.createdAt,
+                updatedAt: note.updatedAt,
+              };
+            },
           );
           setNotes(sessionNotes);
         } else {
@@ -363,20 +375,32 @@ export default function SmartNotebookPanel() {
 
   // Auto-create notebook cards when documents are uploaded
   useEffect(() => {
-    if (hasDocuments && documentCount > 0) {
+    console.log('🔍 Auto-generation check:', { hasDocuments, documentCount, isInitialized });
+    if (hasDocuments && documentCount > 0 && isInitialized) {
       const sessionData = getSessionData();
       const documents: Document[] = sessionData?.documents || [];
       const existingNotes = notes;
+      
+      console.log('📄 Found documents:', documents.length);
+      console.log('📝 Existing notes:', existingNotes.length);
 
       // Check if we need to create cards for new documents
       const newDocuments = documents.filter(
-        (doc) =>
-          doc.status === 'ready' &&
-          !existingNotes.some((note) => note.sourceDocumentId === doc.id),
+        (doc) => {
+          const isReady = doc.status === 'ready';
+          const hasNote = existingNotes.some((note) => note.sourceDocumentId === doc.id);
+          console.log(`📋 Doc ${doc.name}: status=${doc.status}, hasNote=${hasNote}`);
+          return isReady && !hasNote;
+        }
       );
 
+      console.log('🆕 New documents for auto-generation:', newDocuments.length);
       if (newDocuments.length > 0) {
-        generateAINotebookCards(newDocuments);
+        console.log('🚀 Starting auto-generation for:', newDocuments.map(d => d.name));
+        // Delay to ensure documents are fully processed
+        setTimeout(() => {
+          generateAINotebookCards(newDocuments);
+        }, 500);
       }
     }
   }, [

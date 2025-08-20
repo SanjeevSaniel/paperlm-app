@@ -241,37 +241,53 @@ export default function AIChatPanel() {
       const citationContent =
         citation.fullContent || citation.content || 'No content available';
 
+      // Create a better formatted citation title
+      const citationTitle = citation.documentName 
+        ? `📄 Citation: ${citation.documentName}`
+        : '📄 Citation from Chat';
+
+      // Create formatted content with better structure
+      const formattedContent = `## 📚 Source Information
+
+**Document:** ${citation.documentName || 'Unknown'}
+${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation.sourceUrl ? `**URL:** ${citation.sourceUrl}\n` : ''}${citation.author ? `**Author:** ${citation.author}\n` : ''}${citation.publishedAt ? `**Published:** ${citation.publishedAt}\n` : ''}**Relevance Score:** ${Math.round((citation.relevanceScore || 0) * 100)}%
+
+## 💬 Citation Content
+
+> "${citationContent}"
+
+## 📝 Notes
+
+*Add your thoughts and observations about this citation here...*
+
+---
+*Added from AI Chat on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}*`;
+
       // Create a new notebook note from citation
       const newNote: NotebookNote = {
         id: `citation-note-${Date.now()}`,
-        title: `From ${citation.documentName || 'Unknown Document'}`,
-        content: `Source: ${citation.documentName || 'Unknown'}\n${
-          citation.documentType ? `Type: ${citation.documentType}\n` : ''
-        }${citation.sourceUrl ? `URL: ${citation.sourceUrl}\n` : ''}${
-          citation.author ? `Author: ${citation.author}\n` : ''
-        }${
-          citation.publishedAt ? `Published: ${citation.publishedAt}\n` : ''
-        }\nRelevance: ${Math.round(
-          (citation.relevanceScore || 0) * 100,
-        )}%\n\n"${citationContent}"`,
+        title: citationTitle,
+        content: formattedContent,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
-      // Add to existing notes
+      // Add to existing notes (at the beginning)
       const updatedNotes = [newNote, ...existingNotes];
+      
+      // Update session storage first
       updateSessionNotebookNotes(updatedNotes);
 
-      // Trigger notebook refresh to show new note immediately
+      // Trigger notebook refresh to show new note immediately  
       triggerRefresh();
 
-      toast.success('Added to notebook!', {
-        duration: 2000,
+      toast.success('Citation added to notebook!', {
+        duration: 3000,
         icon: '📝',
       });
     } catch (error) {
       console.error('Failed to create notebook card:', error);
-      toast.error('Failed to add to notebook');
+      toast.error('Failed to add citation to notebook');
     }
   };
 
