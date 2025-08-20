@@ -97,20 +97,9 @@ export default function NewNoteDialog({
     <AnimatePresence mode="wait">
       {isOpen && (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{
-              duration: 0.3,
-              ease: [0.16, 1, 0.3, 1]
-            }}
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50"
-            onClick={handleClose}
-          />
           <DialogContent 
-            className='sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col relative z-50'
-            asChild>
+            className='sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col'
+            showCloseButton={false}>
             <motion.div
               initial={{ 
                 opacity: 0, 
@@ -131,7 +120,8 @@ export default function NewNoteDialog({
                 duration: 0.4,
                 ease: [0.16, 1, 0.3, 1],
                 scale: { duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }
-              }}>
+              }}
+              className='flex flex-col h-full'>
               <DialogHeader>
                 <motion.div 
                   className='flex items-start gap-4'
@@ -155,43 +145,44 @@ export default function NewNoteDialog({
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2, duration: 0.3 }}>
                       
-                      {/* Title Input */}
-                      <div className='space-y-2'>
-                        <label className='text-sm font-medium text-gray-700'>
-                          Note Title
-                        </label>
-                        <Input
-                          type='text'
-                          placeholder='Enter note title...'
-                          value={title}
-                          onChange={(e) => setTitle(e.target.value)}
-                          className='w-full text-base focus:border-green-400 focus:ring-green-200 transition-all duration-200'
-                          autoFocus
-                        />
-                      </div>
-
-                      {/* Type Selection */}
-                      <div className='space-y-2'>
-                        <label className='text-sm font-medium text-gray-700'>
-                          Note Type
-                        </label>
-                        <select
-                          value={noteType}
-                          onChange={(e) => setNoteType(e.target.value as Note['type'])}
-                          className='w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white transition-all duration-200'>
-                          <option value='summary'>📄 Summary</option>
-                          <option value='insight'>💡 Insight</option>
-                          <option value='quote'>💬 Quote</option>
-                        </select>
+                      {/* Title and Type in same row */}
+                      <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                        <div className='md:col-span-2 space-y-2'>
+                          <label className='text-sm font-medium text-gray-700'>
+                            Note Title
+                          </label>
+                          <Input
+                            type='text'
+                            placeholder='Enter note title...'
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            className='w-full text-base focus:border-green-400 focus:ring-green-200 transition-all duration-200'
+                            autoFocus
+                          />
+                        </div>
+                        <div className='space-y-2'>
+                          <label className='text-sm font-medium text-gray-700'>
+                            Note Type
+                          </label>
+                          <select
+                            value={noteType}
+                            onChange={(e) => setNoteType(e.target.value as Note['type'])}
+                            className='w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white transition-all duration-200'>
+                            <option value='summary'>📄 Summary</option>
+                            <option value='insight'>💡 Insight</option>
+                            <option value='quote'>💬 Quote</option>
+                          </select>
+                        </div>
                       </div>
                     </motion.div>
                   </div>
                   <motion.button
                     onClick={handleClose}
-                    className='text-gray-400 hover:text-gray-600 transition-colors p-1'
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}>
-                    <X className='w-5 h-5' />
+                    className='group flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100/80 hover:bg-red-100 text-gray-500 hover:text-red-600 transition-all duration-200 border border-gray-200/50 hover:border-red-200'
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    title='Close dialog'>
+                    <X className='w-4 h-4' />
                   </motion.button>
                 </motion.div>
               </DialogHeader>
@@ -211,7 +202,7 @@ export default function NewNoteDialog({
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     rows={12}
-                    className='w-full text-sm focus:border-green-400 focus:ring-green-200 transition-all duration-200 resize-none'
+                    className='w-full text-sm focus:border-green-400 focus:ring-green-200 transition-all duration-200 resize-y min-h-[200px] max-h-[400px]'
                   />
                 </div>
               </motion.div>
