@@ -384,28 +384,56 @@ export default function AIChatPanel() {
               : 'Upload documents in Sources panel to start intelligent conversations'
             }
           </p>
-          <div className='flex items-center gap-2'>
-            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border backdrop-blur-sm ${
-              user 
-                ? 'bg-blue-50/80 text-blue-700 border-blue-200/50' 
-                : canUseService 
-                  ? 'bg-green-50/80 text-green-700 border-green-200/50' 
-                  : 'bg-red-50/80 text-red-700 border-red-200/50'
-            }`}>
-              <div className={`w-1.5 h-1.5 rounded-full ${
+          <div className='flex justify-end'>
+            <motion.div 
+              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border backdrop-blur-sm transition-all duration-300 ${
                 user 
-                  ? 'bg-blue-500' 
+                  ? 'bg-blue-50/90 text-blue-600 border-blue-200/60 shadow-sm' 
                   : canUseService 
-                    ? 'bg-green-500' 
-                    : 'bg-red-500'
-              }`}></div>
-              <span>
+                    ? 'bg-green-50/90 text-green-600 border-green-200/60 shadow-sm' 
+                    : 'bg-red-50/90 text-red-600 border-red-200/60 shadow-sm'
+              }`}
+              animate={{
+                boxShadow: user 
+                  ? '0 0 0 0 rgba(59, 130, 246, 0.5)' 
+                  : canUseService 
+                    ? '0 0 0 0 rgba(34, 197, 94, 0.5)'
+                    : '0 0 0 0 rgba(239, 68, 68, 0.5)'
+              }}
+              whileHover={{
+                scale: 1.02,
+                boxShadow: user 
+                  ? '0 0 20px 2px rgba(59, 130, 246, 0.2)' 
+                  : canUseService 
+                    ? '0 0 20px 2px rgba(34, 197, 94, 0.2)'
+                    : '0 0 20px 2px rgba(239, 68, 68, 0.2)'
+              }}
+              transition={{ duration: 0.2 }}>
+              <motion.div 
+                className={`w-1 h-1 rounded-full ${
+                  user 
+                    ? 'bg-blue-500' 
+                    : canUseService 
+                      ? 'bg-green-500' 
+                      : 'bg-red-500'
+                }`}
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.8, 1, 0.8]
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: 'easeInOut'
+                }}
+              />
+              <span className="text-[10px] leading-none">
                 {user 
-                  ? 'Unlimited' 
-                  : `${usageCount}/${maxFreeUsage} queries`
+                  ? '∞' 
+                  : `${usageCount}/${maxFreeUsage}`
                 }
               </span>
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>
@@ -749,7 +777,7 @@ export default function AIChatPanel() {
         </form>
         
         {/* Instructions */}
-        <div className='pt-0.5 pb-0.5'>
+        <div className='pt-0.5 pb-1'>
           <p className='text-xs text-slate-500 text-center'>
             Press Enter to send • Upload docs in Sources panel
           </p>
