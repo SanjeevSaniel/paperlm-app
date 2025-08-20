@@ -1,10 +1,11 @@
 'use client';
 
 import { DocumentProvider } from '@/contexts/DocumentContext';
+import { NotebookProvider } from '@/contexts/NotebookContext';
 import { UsageProvider, useUsage } from '@/contexts/UsageContext';
-import { PanelType } from '@/types';
-import { useUser, UserButton } from '@clerk/nextjs';
 import { updateUserAuth } from '@/lib/sessionStorage';
+import { PanelType } from '@/types';
+import { UserButton, useUser } from '@clerk/nextjs';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ChevronLeft,
@@ -12,18 +13,17 @@ import {
   FileText,
   MessageSquare,
   NotebookPen,
-  Plus,
-  Zap,
+  Zap
 } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
-import { Toaster } from 'react-hot-toast';
 import Link from 'next/link';
+import React, { useEffect, useState } from 'react';
+import { Toaster } from 'react-hot-toast';
+import { GuidedTourProvider, TourButton } from './GuidedTour';
 import Logo from './Logo';
 import AIChatPanel from './panels/AIChatPanel';
 import DocumentSourcesPanel from './panels/DocumentSourcesPanel';
 import SmartNotebookPanel from './panels/SmartNotebookPanel';
 import { Card, CardContent, CardHeader } from './ui';
-import { GuidedTourProvider, TourButton } from './GuidedTour';
 
 // Props typing for the three panels
 type ChatPanelComponent = React.ComponentType<{ isCollapsed?: boolean }>;
@@ -188,11 +188,13 @@ Bringing your documents to life with AI...
         <header className='px-4 md:px-6 py-1.5'>
           <div className='max-w-screen-2xl mx-auto flex items-center justify-between'>
             <div className='flex items-center gap-4'>
-              <Logo
-                size='sm'
-                showText={true}
-                animated={true}
-              />
+              <div data-tour="welcome">
+                <Logo
+                  size='sm'
+                  showText={true}
+                  animated={true}
+                />
+              </div>
               <div className='hidden sm:block w-px h-6 bg-slate-300/60'></div>
               <p
                 className='hidden sm:block text-sm text-slate-500 font-light tracking-wide'
@@ -205,18 +207,20 @@ Bringing your documents to life with AI...
               {/* Tour Button */}
               <TourButton />
               
-              {/* Usage Status */}
-              <div className='flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm border border-amber-200/50 rounded-full' data-tour="usage-indicator">
-                <Zap className={`w-4 h-4 ${usageCount >= maxFreeUsage ? 'text-red-500' : 'text-amber-500'}`} />
-                <span className='text-sm font-medium text-gray-700'>
-                  {usageCount}/{maxFreeUsage}
-                </span>
-                {usageCount >= maxFreeUsage && (
-                  <span className='text-xs text-red-600 font-medium ml-1'>
-                    Limit reached
+              {/* Usage Status - Only show for guest users */}
+              {!user && (
+                <div className='flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm border border-amber-200/50 rounded-full' data-tour="usage-indicator">
+                  <Zap className={`w-4 h-4 ${usageCount >= maxFreeUsage ? 'text-red-500' : 'text-amber-500'}`} />
+                  <span className='text-sm font-medium text-gray-700'>
+                    {usageCount}/{maxFreeUsage}
                   </span>
-                )}
-              </div>
+                  {usageCount >= maxFreeUsage && (
+                    <span className='text-xs text-red-600 font-medium ml-1'>
+                      Limit reached
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* User Authentication */}
               {user ? (
@@ -309,85 +313,9 @@ Bringing your documents to life with AI...
                             </div>
                           </div>
 
-                          {/* Vertical actions */}
+                          {/* Vertical actions - removed per user request */}
                           <div className='flex-1 flex flex-col items-center py-6 space-y-6 overflow-hidden'>
-                            {cardId === 'sources' && (
-                              <motion.button
-                                onClick={() => togglePanelCollapse(cardId)}
-                                className='group relative w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100/70 border border-blue-200/60 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden'
-                                title='Expand to Add Content'
-                                whileHover={{ scale: 1.1, y: -2 }}
-                                whileTap={{ scale: 0.9 }}>
-                                <motion.div
-                                  className='absolute inset-0 bg-gradient-to-br from-blue-100 to-blue-200/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300'
-                                  animate={{ scale: [1, 1.05, 1] }}
-                                  transition={{
-                                    duration: 3,
-                                    repeat: Infinity,
-                                    ease: 'easeInOut',
-                                  }}
-                                />
-                                <div className='absolute inset-0.5 rounded-xl bg-gradient-to-br from-white/90 to-blue-50/50' />
-                                <motion.div
-                                  className='relative flex items-center justify-center w-full h-full'
-                                  whileHover={{ rotate: 90 }}
-                                  transition={{
-                                    type: 'spring',
-                                    stiffness: 300,
-                                    damping: 15,
-                                  }}>
-                                  <Plus className='w-5 h-5 text-blue-700 group-hover:text-blue-800 transition-colors duration-200' />
-                                </motion.div>
-                                <motion.div
-                                  className='absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-blue-200/40 to-blue-300/40 opacity-0 group-hover:opacity-100 blur-sm'
-                                  animate={{ scale: [0.9, 1.1, 0.9] }}
-                                  transition={{
-                                    duration: 2,
-                                    repeat: Infinity,
-                                    ease: 'easeInOut',
-                                  }}
-                                />
-                              </motion.button>
-                            )}
-
-                            {cardId === 'chat' && (
-                              <motion.button
-                                onClick={() => togglePanelCollapse(cardId)}
-                                className='group relative w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/70 border border-emerald-200/60 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden'
-                                title='Expand to Chat'
-                                whileHover={{ scale: 1.1, y: -2 }}
-                                whileTap={{ scale: 0.9 }}>
-                                <motion.div
-                                  className='absolute inset-0 bg-gradient-to-br from-emerald-100 to-emerald-200/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300'
-                                  animate={{ scale: [1, 1.05, 1] }}
-                                  transition={{
-                                    duration: 3,
-                                    repeat: Infinity,
-                                    ease: 'easeInOut',
-                                  }}
-                                />
-                                <div className='absolute inset-0.5 rounded-xl bg-gradient-to-br from-white/90 to-emerald-50/50' />
-                                <motion.div
-                                  className='relative flex items-center justify-center w-full h-full'
-                                  whileHover={{ scale: [1, 1.2, 1] }}
-                                  transition={{
-                                    type: 'spring',
-                                    stiffness: 400,
-                                    damping: 10,
-                                  }}>
-                                  <MessageSquare className='w-5 h-5 text-emerald-700 group-hover:text-emerald-800 transition-colors duration-200' />
-                                </motion.div>
-                                <motion.div
-                                  className='absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-emerald-200/40 to-emerald-300/40 opacity-0 group-hover:opacity-100 blur-sm'
-                                  animate={{ scale: [0.9, 1.1, 0.9] }}
-                                  transition={{
-                                    duration: 2,
-                                    repeat: Infinity,
-                                    ease: 'easeInOut',
-                                  }}
-                                />
-                              </motion.button>
-                            )}
+                            {/* Icon buttons removed as requested */}
                           </div>
                         </div>
                       </motion.div>
@@ -498,7 +426,9 @@ export default function AppLayout() {
     <GuidedTourProvider>
       <UsageProvider>
         <DocumentProvider>
-          <AppLayoutContent />
+          <NotebookProvider>
+            <AppLayoutContent />
+          </NotebookProvider>
         </DocumentProvider>
       </UsageProvider>
     </GuidedTourProvider>
