@@ -185,8 +185,8 @@ Bringing your documents to life with AI...
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
       {/* Header */}
-      <header className='px-4 md:px-10 py-2'>
-        <div className='max-w-screen-2xl mx-auto flex items-center justify-between'>
+      <header className='px-8 py-2'>
+        <div className='max-w-screen-2xl mx-auto px-6 flex items-center justify-between'>
           <div className='flex items-center gap-4'>
             <div data-tour='welcome'>
               <Logo
