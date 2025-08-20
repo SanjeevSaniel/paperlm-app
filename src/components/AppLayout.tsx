@@ -185,7 +185,7 @@ Bringing your documents to life with AI...
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
       {/* Header */}
-      <header className='px-4 md:px-10 py-1.5'>
+      <header className='px-4 md:px-10 py-2'>
         <div className='max-w-screen-2xl mx-auto flex items-center justify-between'>
           <div className='flex items-center gap-4'>
             <div data-tour='welcome'>
@@ -259,7 +259,7 @@ Bringing your documents to life with AI...
       </header>
 
       {/* Main Content */}
-      <main className='flex-1 p-3 md:p-4 overflow-hidden min-h-0'>
+      <main className='flex-1 p-3 md:px-4 md:py-1 md:pb-4 overflow-hidden min-h-0'>
         <div className='max-w-screen-2xl mx-auto h-full min-h-0'>
           <div
             className={`h-full min-h-0 grid gap-4 transition-all duration-700 ease-in-out ${getGridLayoutClasses()}`}>
