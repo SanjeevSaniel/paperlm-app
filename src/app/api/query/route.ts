@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`🔍 Searching for: "${message}"`);
+    // console.log(`🔍 Searching for: "${message}"`);
 
     // Perform similarity search with more results to ensure text input is included
     const results: RAGResult[] = await similaritySearch(message, 15);
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log(`📄 Found ${results.length} relevant chunks`);
+    // console.log(`📄 Found ${results.length} relevant chunks`);
 
     // Build comprehensive context including text input
     const contextChunks: string[] = [];
@@ -180,9 +180,9 @@ export async function POST(request: NextRequest) {
     }
 
     const context = contextChunks.join('\n\n');
-    console.log(
-      `📝 Built context with ${context.length} characters from ${contextChunks.length} chunks`,
-    );
+    // console.log(
+    //   `📝 Built context with ${context.length} characters from ${contextChunks.length} chunks`,
+    // );
 
     // Enhanced system prompt
     const systemPrompt = `You are a knowledgeable AI assistant that answers questions based on the provided Context.
@@ -205,7 +205,7 @@ Remember: Answer only based on the Context provided above. Do not use external k
       { role: 'user' as const, content: message },
     ];
 
-    console.log(`🤖 Sending to AI with ${context.length} chars of context`);
+    // console.log(`🤖 Sending to AI with ${context.length} chars of context`);
     const response = await generateChatCompletion(messages, systemPrompt);
 
     // Create citations
@@ -226,7 +226,7 @@ Remember: Answer only based on the Context provided above. Do not use external k
       isTextInput: doc.metadata.fileName === 'text-input.txt',
     }));
 
-    console.log(`✅ Generated response with ${citations.length} citations`);
+    // console.log(`✅ Generated response with ${citations.length} citations`);
 
     return NextResponse.json({
       response,
