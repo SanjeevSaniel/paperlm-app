@@ -915,11 +915,11 @@ export default function AIChatPanel() {
       </div>
 
       {/* Input - Reduced bottom padding */}
-      <div className='border-t border-slate-200 px-4 pt-2 pb-1 bg-white/50 shrink-0'>
+      <div className='px-4 pt-2 pb-1 bg-white/50 shrink-0'>
         <form
           onSubmit={handleSubmit}
           className='w-full'>
-          <div className='relative w-full bg-white rounded-xl shadow-sm border border-slate-200 focus-within:ring-2 focus-within:ring-amber-200 focus-within:border-amber-400 transition-all'>
+          <div className='relative flex items-center  w-full bg-white rounded-xl shadow-sm border border-slate-200 focus-within:ring-2 focus-within:ring-amber-200 focus-within:border-amber-400 transition-all'>
             <textarea
               ref={textareaRef}
               value={inputValue}
