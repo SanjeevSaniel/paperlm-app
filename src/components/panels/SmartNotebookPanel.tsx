@@ -210,7 +210,6 @@ export default function SmartNotebookPanel() {
 
   const generateAINotebookCards = useCallback(
     async (documents: Document[]) => {
-
       try {
         for (const doc of documents) {
           // Add to processing set
@@ -540,12 +539,13 @@ export default function SmartNotebookPanel() {
 
       {/* Notes List */}
       <div className='flex-1 overflow-y-auto p-4'>
+        {/* UPDATED EMPTY STATES */}
         {/* Empty State - Show when no documents AND no notes */}
         {!hasDocuments && notes.length === 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className='text-center py-12 bg-gradient-to-br from-blue-50/40 via-purple-50/30 to-amber-50/40 rounded-2xl border border-blue-100/50 shadow-sm'>
+            className='text-center py-12 bg-gradient-to-br from-orange-50/40 via-amber-50/30 to-yellow-50/40 rounded-2xl border border-orange-100/50 shadow-sm'>
             <motion.div
               animate={{
                 scale: [1, 1.08, 1],
@@ -556,7 +556,7 @@ export default function SmartNotebookPanel() {
                 repeat: Infinity,
                 ease: 'easeInOut',
               }}
-              className='w-16 h-16 bg-gradient-to-br from-blue-400 via-purple-500 to-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg'>
+              className='w-16 h-16 bg-gradient-to-br from-orange-400 via-amber-500 to-yellow-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg'>
               <BookOpen className='w-8 h-8 text-white' />
             </motion.div>
             <motion.h3
@@ -564,35 +564,23 @@ export default function SmartNotebookPanel() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
               className='text-lg font-semibold text-gray-800 mb-2'>
-              Ready to analyze your documents
+              Smart Notebook Ready
             </motion.h3>
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
               className='text-sm text-gray-600 mb-4'>
-              Upload documents or add sources to start taking AI-enhanced notes
+              Upload documents to automatically generate AI-powered notes,
+              summaries, and insights
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              className='flex items-center justify-center gap-2'>
-              <motion.div
-                className='w-2 h-2 bg-blue-400 rounded-full'
-                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 1.5, repeat: Infinity, delay: 0 }}
-              />
-              <motion.div
-                className='w-2 h-2 bg-purple-400 rounded-full'
-                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
-              />
-              <motion.div
-                className='w-2 h-2 bg-amber-400 rounded-full'
-                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 1.5, repeat: Infinity, delay: 0.6 }}
-              />
+              transition={{ delay: 0.7 }}>
+              <div className='px-3 py-1 bg-orange-50 text-orange-600 rounded-full text-xs font-medium inline-block'>
+                📝 Notes will appear automatically after upload
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -602,7 +590,7 @@ export default function SmartNotebookPanel() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className='text-center py-10 bg-gradient-to-br from-green-50/40 to-emerald-50/40 rounded-2xl border border-green-100/50 shadow-sm'>
+            className='text-center py-10 bg-gradient-to-br from-purple-50/40 to-indigo-50/40 rounded-2xl border border-purple-100/50 shadow-sm'>
             <motion.div
               animate={{
                 scale: [1, 1.1, 1],
@@ -613,23 +601,23 @@ export default function SmartNotebookPanel() {
                 repeat: Infinity,
                 ease: 'easeInOut',
               }}
-              className='w-14 h-14 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md'>
-              <FileText className='w-7 h-7 text-white' />
+              className='w-14 h-14 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md'>
+              <Lightbulb className='w-7 h-7 text-white' />
             </motion.div>
             <motion.h3
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
               className='text-lg font-semibold text-gray-800 mb-2'>
-              Documents ready!
+              Generating Smart Notes...
             </motion.h3>
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
               className='text-sm text-gray-600 mb-4'>
-              Start by creating your first note or let AI generate insights from
-              your documents
+              AI is analyzing your documents to create intelligent notes and
+              summaries automatically
             </motion.p>
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
@@ -638,8 +626,8 @@ export default function SmartNotebookPanel() {
               className='flex items-center justify-center gap-3'>
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className='px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-xs font-medium border border-green-200'>
-                ✨ Ready for insights
+                className='px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium border border-purple-200'>
+                🧠 AI insights being generated
               </motion.div>
             </motion.div>
           </motion.div>
