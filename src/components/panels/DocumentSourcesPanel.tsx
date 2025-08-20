@@ -121,6 +121,7 @@ export default function DocumentSourcesPanel() {
                   ? {
                       ...doc,
                       id: result.documentId,
+                      content: result.content || '', // Store the full content
                       status: 'ready' as const,
                       metadata: {
                         ...doc.metadata,

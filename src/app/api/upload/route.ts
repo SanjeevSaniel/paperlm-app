@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
       fileName: file.name,
       chunksCount: chunks.length,
       textLength: text.length,
+      content: text, // Include the full text content
       isTextInput: file.name === 'text-input.txt',
       success: true,
     });
