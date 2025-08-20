@@ -326,20 +326,42 @@ Bringing your documents to life with AI...
                     <motion.div
                       key={cardId}
                       className='relative h-full min-h-0 min-w-0'
-                      initial={{ opacity: 0, scale: 0.95, x: cardId === 'sources' ? -20 : cardId === 'chat' ? 20 : 0 }}
+                      initial={{
+                        opacity: 0,
+                        scale: 0.95,
+                        x:
+                          cardId === 'sources'
+                            ? -20
+                            : cardId === 'chat'
+                            ? 20
+                            : 0,
+                      }}
                       animate={{ opacity: 1, scale: 1, x: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, x: cardId === 'sources' ? -20 : cardId === 'chat' ? 20 : 0 }}
+                      exit={{
+                        opacity: 0,
+                        scale: 0.95,
+                        x:
+                          cardId === 'sources'
+                            ? -20
+                            : cardId === 'chat'
+                            ? 20
+                            : 0,
+                      }}
                       transition={{
                         duration: 0.6,
                         delay: index * 0.1,
                         ease: [0.25, 0.1, 0.25, 1],
                       }}>
-                      <Card 
-                        className='h-full min-h-0 flex flex-col overflow-hidden min-w-0'
+                      <Card
+                        className='h-full min-h-0 flex flex-col overflow-hidden min-w-0 pb-0'
                         data-tour={
-                          cardId === 'sources' ? 'sources-panel' :
-                          cardId === 'notebook' ? 'notebook-panel' :
-                          cardId === 'chat' ? 'chat-panel' : undefined
+                          cardId === 'sources'
+                            ? 'sources-panel'
+                            : cardId === 'notebook'
+                            ? 'notebook-panel'
+                            : cardId === 'chat'
+                            ? 'chat-panel'
+                            : undefined
                         }>
                         <CardHeader>
                           <div className='flex items-center justify-between'>
