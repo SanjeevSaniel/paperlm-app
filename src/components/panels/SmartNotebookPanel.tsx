@@ -61,6 +61,8 @@ export default function SmartNotebookPanel() {
   const [newlyCreatedNotes, setNewlyCreatedNotes] = useState<Set<string>>(
     new Set(),
   );
+  // Track documents that have already had notes generated to prevent duplicates on reload
+  const [processedDocuments, setProcessedDocuments] = useState<Set<string>>(new Set());
   const { hasDocuments, documentCount } = useDocumentContext();
   const { refreshTrigger } = useNotebookContext();
 
@@ -95,7 +97,7 @@ export default function SmartNotebookPanel() {
 
   // Helper function to extract AI summary from document content
   const extractAISummary = useCallback(
-    (documentContent: string, documentName: string) => {
+    (documentContent: string, documentName: string, sourceUrl?: string) => {
       if (!documentContent) return null;
 
       // Check for Gemini AI summary pattern
@@ -104,9 +106,32 @@ export default function SmartNotebookPanel() {
       );
 
       if (geminiSummaryMatch && geminiSummaryMatch[1]) {
+        let enhancedContent = geminiSummaryMatch[1].trim();
+        
+        // Add scraped data section for videos
+        if (sourceUrl && sourceUrl.includes('youtube')) {
+          const originalTranscriptMatch = documentContent.match(/# 📄 Original Transcript\s*([\s\S]*)/);
+          const originalTranscript = originalTranscriptMatch ? originalTranscriptMatch[1].trim() : '';
+          
+          enhancedContent += `\n\n---\n\n## 📝 Original Video Data\n\n`;
+          enhancedContent += `### 🎥 Video Information\n`;
+          enhancedContent += `- **Title**: ${documentName}\n`;
+          enhancedContent += `- **URL**: [${sourceUrl}](${sourceUrl})\n`;
+          enhancedContent += `- **Total Content**: ${documentContent.length.toLocaleString()} characters\n`;
+          enhancedContent += `- **AI Processed**: ${new Date().toLocaleString()}\n\n`;
+          
+          if (originalTranscript) {
+            const transcriptLines = originalTranscript.split('\n').filter(line => line.trim()).slice(0, 15);
+            if (transcriptLines.length > 0) {
+              enhancedContent += `### 🎯 Raw Transcript Sample\n\n`;
+              enhancedContent += `\`\`\`\n${transcriptLines.join('\n')}\n${originalTranscript.split('\n').length > 15 ? '...\n[Full transcript available for search and analysis]' : ''}\n\`\`\`\n\n`;
+            }
+          }
+        }
+
         return {
           type: 'gemini',
-          content: geminiSummaryMatch[1].trim(),
+          content: enhancedContent,
           title: `✨ ${documentName} - Gemini AI Summary`,
           tags: [
             '🎥 Video',
@@ -114,6 +139,7 @@ export default function SmartNotebookPanel() {
             '✨ AI Summary',
             '🧠 Advanced Reasoning',
             '✅ Complete',
+            '📝 Raw Data',
           ],
         };
       }
@@ -124,11 +150,37 @@ export default function SmartNotebookPanel() {
       );
 
       if (aiSummaryMatch && aiSummaryMatch[1]) {
+        let enhancedContent = aiSummaryMatch[1].trim();
+        
+        // Add scraped data section
+        if (sourceUrl) {
+          enhancedContent += `\n\n---\n\n## 📄 Source Data Information\n\n`;
+          enhancedContent += `### 🌐 Content Details\n`;
+          enhancedContent += `- **Title**: ${documentName}\n`;
+          if (sourceUrl.includes('youtube')) {
+            enhancedContent += `- **Video URL**: [${sourceUrl}](${sourceUrl})\n`;
+          } else {
+            const hostname = new URL(sourceUrl).hostname;
+            enhancedContent += `- **Website**: ${hostname}\n`;
+            enhancedContent += `- **URL**: [${sourceUrl}](${sourceUrl})\n`;
+          }
+          enhancedContent += `- **Content Length**: ${documentContent.length.toLocaleString()} characters\n`;
+          enhancedContent += `- **AI Processed**: ${new Date().toLocaleString()}\n\n`;
+          
+          // Add content preview
+          const contentPreview = documentContent.substring(0, 400).trim();
+          if (contentPreview) {
+            enhancedContent += `### 📖 Raw Content Preview\n\n`;
+            enhancedContent += `> ${contentPreview}${documentContent.length > 400 ? '...' : ''}\n\n`;
+            enhancedContent += `*Full content available for detailed analysis and search.*\n`;
+          }
+        }
+
         return {
           type: 'ai',
-          content: aiSummaryMatch[1].trim(),
+          content: enhancedContent,
           title: `🤖 ${documentName} - AI Summary`,
-          tags: ['🎥 Video', '🤖 AI Generated', '📝 Summary', '✅ Complete'],
+          tags: ['🎥 Video', '🤖 AI Generated', '📝 Summary', '✅ Complete', '📄 Raw Data'],
         };
       }
 
@@ -142,6 +194,11 @@ export default function SmartNotebookPanel() {
     const type = doc.metadata.type;
     const size = ((doc.metadata.size || 0) / 1024).toFixed(1);
     const chunks = doc.metadata.chunksCount || 0;
+
+    // Get the full document content to extract scraped data
+    const sessionData = getSessionData();
+    const fullDocument = sessionData?.documents?.find(d => d.id === doc.id);
+    const rawContent = fullDocument?.content || '';
 
     let content = `## 📊 Document Analysis\n\n`;
 
@@ -161,11 +218,62 @@ export default function SmartNotebookPanel() {
       content += `| **Processing** | Full transcript + metadata |\n`;
       content += `| **Search Capability** | Timestamp-aware queries |\n`;
       content += `| **AI Features** | Topic extraction, speaker analysis |\n\n`;
+
+      // Add scraped video data section
+      if (rawContent) {
+        content += `## 📝 Scraped Video Data\n\n`;
+        content += `### 🎥 Video Information\n`;
+        content += `- **Title**: ${doc.name}\n`;
+        if (doc.sourceUrl) {
+          content += `- **URL**: [${doc.sourceUrl}](${doc.sourceUrl})\n`;
+        }
+        content += `- **Content Length**: ${rawContent.length.toLocaleString()} characters\n`;
+        content += `- **Processed**: ${new Date().toLocaleString()}\n\n`;
+        
+        // Extract and show first few lines of transcript as preview
+        const transcriptLines = rawContent.split('\n').filter(line => line.trim()).slice(0, 10);
+        if (transcriptLines.length > 0) {
+          content += `### 🎯 Transcript Preview\n\n`;
+          content += `\`\`\`\n${transcriptLines.join('\n')}\n\`\`\`\n\n`;
+          content += `*Full transcript available in chat and search functions.*\n\n`;
+        }
+      }
     } else if (type === 'text/html') {
       content += `**🌐 Website Content Analysis**\n`;
       content += `- Web content successfully scraped and processed\n`;
       content += `- Key information extracted and structured\n`;
       content += `- Available for semantic search and chat\n\n`;
+
+      // Add scraped website data section
+      if (rawContent) {
+        content += `## 📄 Scraped Website Data\n\n`;
+        content += `### 🌐 Website Information\n`;
+        content += `- **Title**: ${doc.name}\n`;
+        if (doc.sourceUrl) {
+          const hostname = new URL(doc.sourceUrl).hostname;
+          content += `- **Domain**: ${hostname}\n`;
+          content += `- **URL**: [${doc.sourceUrl}](${doc.sourceUrl})\n`;
+        }
+        content += `- **Content Length**: ${rawContent.length.toLocaleString()} characters\n`;
+        content += `- **Scraped**: ${new Date().toLocaleString()}\n\n`;
+        
+        // Extract and show content preview (first paragraph or 500 chars)
+        const contentPreview = rawContent.substring(0, 500).trim();
+        if (contentPreview) {
+          content += `### 🎯 Content Preview\n\n`;
+          content += `> ${contentPreview}${rawContent.length > 500 ? '...' : ''}\n\n`;
+          content += `*Full content available for detailed analysis and search.*\n\n`;
+        }
+
+        // Extract key sections if available
+        const paragraphs = rawContent.split('\n\n').filter(p => p.trim() && p.length > 50);
+        if (paragraphs.length > 1) {
+          content += `### 📋 Content Structure\n`;
+          content += `- **Total Sections**: ${paragraphs.length}\n`;
+          content += `- **Average Section Length**: ${Math.round(rawContent.length / paragraphs.length)} characters\n`;
+          content += `- **Structure**: Well-organized content with multiple sections\n\n`;
+        }
+      }
     } else {
       content += `**📄 Document Processing Complete**\n`;
       content += `- File successfully uploaded and parsed\n`;
@@ -242,6 +350,7 @@ export default function SmartNotebookPanel() {
           const aiSummary = extractAISummary(
             fullDocument?.content || '',
             doc.name,
+            doc.sourceUrl,
           );
 
           // Simulate realistic processing time based on document type
@@ -345,9 +454,24 @@ export default function SmartNotebookPanel() {
             },
           );
           setNotes(sessionNotes);
+          
+          // Extract document IDs from existing notes to mark them as already processed
+          const existingDocIds = new Set(
+            sessionNotes
+              .map(note => (note as Note).sourceDocumentId)
+              .filter(id => id) as string[]
+          );
+          setProcessedDocuments(existingDocIds);
         } else {
           // Start with empty notes - let auto-generation create them
           setNotes([]);
+        }
+        
+        // Also load any previously processed document IDs from session storage
+        const processedDocsFromStorage = sessionStorage.getItem('paperlm_processed_documents');
+        if (processedDocsFromStorage) {
+          const processedIds = JSON.parse(processedDocsFromStorage);
+          setProcessedDocuments(prev => new Set([...prev, ...processedIds]));
         }
       } catch (error) {
         console.warn('Failed to load notebook notes from session:', error);
@@ -373,7 +497,7 @@ export default function SmartNotebookPanel() {
     }
   }, [notes, isInitialized]);
 
-  // Auto-create notebook cards when documents are uploaded
+  // Auto-create notebook cards when documents are uploaded (only for newly processed documents)
   useEffect(() => {
     console.log('🔍 Auto-generation check:', { hasDocuments, documentCount, isInitialized });
     if (hasDocuments && documentCount > 0 && isInitialized) {
@@ -383,20 +507,36 @@ export default function SmartNotebookPanel() {
       
       console.log('📄 Found documents:', documents.length);
       console.log('📝 Existing notes:', existingNotes.length);
+      console.log('🏷️ Previously processed docs:', Array.from(processedDocuments));
 
-      // Check if we need to create cards for new documents
+      // Only process documents that are:
+      // 1. Ready status
+      // 2. Don't have existing notes
+      // 3. Haven't been processed before (not in processedDocuments set)
       const newDocuments = documents.filter(
         (doc) => {
           const isReady = doc.status === 'ready';
           const hasNote = existingNotes.some((note) => note.sourceDocumentId === doc.id);
-          console.log(`📋 Doc ${doc.name}: status=${doc.status}, hasNote=${hasNote}`);
-          return isReady && !hasNote;
+          const alreadyProcessed = processedDocuments.has(doc.id);
+          
+          console.log(`📋 Doc ${doc.name}: status=${doc.status}, hasNote=${hasNote}, alreadyProcessed=${alreadyProcessed}`);
+          return isReady && !hasNote && !alreadyProcessed;
         }
       );
 
-      console.log('🆕 New documents for auto-generation:', newDocuments.length);
+      console.log('🆕 NEW documents for auto-generation:', newDocuments.length);
       if (newDocuments.length > 0) {
         console.log('🚀 Starting auto-generation for:', newDocuments.map(d => d.name));
+        
+        // Mark these documents as processed immediately to prevent duplicate processing
+        const newProcessedIds = newDocuments.map(d => d.id);
+        setProcessedDocuments(prev => {
+          const updated = new Set([...prev, ...newProcessedIds]);
+          // Persist to session storage
+          sessionStorage.setItem('paperlm_processed_documents', JSON.stringify(Array.from(updated)));
+          return updated;
+        });
+        
         // Delay to ensure documents are fully processed
         setTimeout(() => {
           generateAINotebookCards(newDocuments);
@@ -409,6 +549,7 @@ export default function SmartNotebookPanel() {
     isInitialized,
     generateAINotebookCards,
     notes,
+    processedDocuments, // Added processedDocuments as dependency
   ]);
 
   const startEditing = (note: Note) => {
