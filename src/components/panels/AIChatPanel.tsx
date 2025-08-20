@@ -539,10 +539,10 @@ ${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation
       <div className='flex-1 min-h-0'>
         {/* Actual scroll area with conditional thin scrollbar */}
         <div
-          className='h-full min-h-0 overflow-y-auto overflow-x-hidden px-4 py-2 space-y-3 relative hover:scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-track-gray-100 scrollbar-track-transparent scrollbar-thumb-rounded-full scrollbar-track-rounded-full'
+          className='h-full min-h-0 overflow-y-auto overflow-x-hidden px-4 py-2 space-y-3 relative'
           style={{
             scrollbarWidth: 'thin',
-            scrollbarColor: 'transparent transparent',
+            scrollbarColor: 'rgba(148, 163, 184, 0.3) transparent',
           }}>
           <style jsx>{`
             div::-webkit-scrollbar {
@@ -550,16 +550,28 @@ ${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation
             }
             div::-webkit-scrollbar-track {
               background: transparent;
+              margin: 4px 0;
             }
             div::-webkit-scrollbar-thumb {
+              background: rgba(148, 163, 184, 0.3);
+              border-radius: 10px;
+              transition: all 0.2s ease;
+            }
+            div::-webkit-scrollbar-thumb:hover {
+              background: rgba(148, 163, 184, 0.6);
+              transform: scaleX(1.2);
+            }
+            div::-webkit-scrollbar-thumb:active {
+              background: rgba(148, 163, 184, 0.8);
+            }
+            div::-webkit-scrollbar-corner {
               background: transparent;
-              border-radius: 2px;
             }
+            
+            /* Modern floating effect */
             div:hover::-webkit-scrollbar-thumb {
-              background: #d1d5db;
-            }
-            div:hover::-webkit-scrollbar-thumb:hover {
-              background: #9ca3af;
+              background: rgba(148, 163, 184, 0.5);
+              box-shadow: 0 0 6px rgba(148, 163, 184, 0.2);
             }
           `}</style>
 
