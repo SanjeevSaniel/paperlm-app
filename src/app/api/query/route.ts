@@ -208,23 +208,41 @@ Remember: Answer only based on the Context provided above. Do not use external k
     // console.log(`🤖 Sending to AI with ${context.length} chars of context`);
     const response = await generateChatCompletion(messages, systemPrompt);
 
-    // Create citations
-    const citations = results.slice(0, 8).map((doc, index) => ({
-      id: `citation-${Date.now()}-${index}`,
-      documentId: doc.metadata.documentId,
-      documentName: doc.metadata.fileName || 'Unknown Document',
-      documentType: doc.metadata.fileType || 'text/plain',
-      sourceUrl: doc.metadata.sourceUrl,
-      chunkId: doc.metadata.chunkId,
-      chunkIndex: doc.metadata.chunkIndex || 0,
-      content:
-        doc.pageContent.length > 200
-          ? doc.pageContent.slice(0, 200) + '...'
-          : doc.pageContent,
-      relevanceScore: Math.max(0.1, 0.95 - index * 0.1),
-      uploadedAt: doc.metadata.uploadedAt || new Date().toISOString(),
-      isTextInput: doc.metadata.fileName === 'text-input.txt',
-    }));
+    // Create citations with deduplication based on chunkId
+    const uniqueCitations = new Map();
+    
+    results.slice(0, 8).forEach((doc, index) => {
+      const chunkId = doc.metadata.chunkId;
+      
+      // Skip if we already have a citation for this chunk
+      if (uniqueCitations.has(chunkId)) {
+        return;
+      }
+      
+      const citation = {
+        id: `citation-${chunkId}`, // Use chunkId for consistent ID
+        documentId: doc.metadata.documentId,
+        documentName: doc.metadata.fileName || 'Unknown Document',
+        documentType: doc.metadata.fileType || 'text/plain',
+        sourceUrl: doc.metadata.sourceUrl,
+        chunkId: doc.metadata.chunkId,
+        chunkIndex: doc.metadata.chunkIndex || 0,
+        content:
+          doc.pageContent.length > 200
+            ? doc.pageContent.slice(0, 200) + '...'
+            : doc.pageContent,
+        fullContent: doc.pageContent, // Store full content for citation details
+        relevanceScore: Math.max(0.1, 0.95 - index * 0.1),
+        uploadedAt: doc.metadata.uploadedAt || new Date().toISOString(),
+        isTextInput: doc.metadata.fileName === 'text-input.txt',
+        author: ('author' in doc.metadata) ? doc.metadata.author as string : undefined,
+        publishedAt: ('publishedAt' in doc.metadata) ? doc.metadata.publishedAt as string : undefined,
+      };
+      
+      uniqueCitations.set(chunkId, citation);
+    });
+    
+    const citations = Array.from(uniqueCitations.values());
 
     // console.log(`✅ Generated response with ${citations.length} citations`);
 

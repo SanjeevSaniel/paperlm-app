@@ -34,6 +34,8 @@ import AIAssistantAnimation from '../AIAssistantAnimation';
 // Handle citation click to create notebook card
 interface Citation {
   id: string;
+  chunkId?: string;
+  documentId?: string;
   documentName?: string;
   documentType?: string;
   sourceUrl?: string;
@@ -407,6 +409,15 @@ ${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation
         // Increment usage count on successful response
         incrementUsage();
 
+        // Deduplicate citations on client side as well
+        const uniqueCitations = new Map();
+        (result.citations || []).forEach((citation: Citation) => {
+          const key = citation.chunkId || citation.content; // Use chunkId or content as fallback
+          if (!uniqueCitations.has(key)) {
+            uniqueCitations.set(key, citation);
+          }
+        });
+
         const assistantMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
@@ -414,7 +425,7 @@ ${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation
             result.response ||
             "I received your message but couldn't generate a proper response.",
           timestamp: new Date(),
-          citations: result.citations || [],
+          citations: Array.from(uniqueCitations.values()),
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
