@@ -11,9 +11,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    console.log(
-      `📝 Processing file: ${file.name}, Type: ${file.type}, Size: ${file.size}`,
-    );
+    // console.log(
+    //   `📝 Processing file: ${file.name}, Type: ${file.type}, Size: ${file.size}`,
+    // );
 
     // Extract text content
     const text = await extractTextFromFile(file);
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`✅ Extracted ${text.length} characters from ${file.name}`);
+    // console.log(`✅ Extracted ${text.length} characters from ${file.name}`);
 
     // Generate unique document ID
     const documentId = `doc-${Date.now()}-${Math.random()
@@ -37,9 +37,9 @@ export async function POST(request: NextRequest) {
 
     // Chunk the document
     const chunks = await chunkDocument(documentId, text);
-    console.log(
-      `📚 Created ${chunks.length} chunks for document ${documentId}`,
-    );
+    // console.log(
+    //   `📚 Created ${chunks.length} chunks for document ${documentId}`,
+    // );
 
     // Prepare documents for vector storage
     const docs = chunks.map((chunk) => ({
@@ -60,11 +60,11 @@ export async function POST(request: NextRequest) {
     }));
 
     // Add to vector database
-    console.log(
-      `🔍 Adding ${docs.length} document chunks to vector database...`,
-    );
+    // console.log(
+    //   `🔍 Adding ${docs.length} document chunks to vector database...`,
+    // );
     await addDocuments(docs);
-    console.log(`✅ Successfully indexed ${docs.length} chunks`);
+    // console.log(`✅ Successfully indexed ${docs.length} chunks`);
 
     return NextResponse.json({
       documentId,
