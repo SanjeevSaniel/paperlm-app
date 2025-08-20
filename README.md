@@ -355,6 +355,12 @@ The tour covers:
 
 ## 🏗️ Architecture
 
+### System Architecture
+
+![RAG System Architecture](./public/RAG_working.webp)
+
+*The complete RAG (Retrieval Augmented Generation) architecture powering PaperLM's intelligent document analysis capabilities*
+
 ### Key Components
 
 - **Layout.tsx**: Main three-panel interface
