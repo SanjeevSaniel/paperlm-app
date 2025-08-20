@@ -21,17 +21,14 @@ interface CompactDocumentCardProps {
     size?: string;
     status: 'uploading' | 'processing' | 'ready' | 'error';
     chunksCount?: number;
-    uploadedAt: Date;
+    uploadedAt: Date | string; // Allow both Date and string types
     sourceUrl?: string;
     fileType?: string;
   };
   onDelete?: (id: string) => void;
 }
 
-const DocumentCard = ({
-  document,
-  onDelete,
-}: CompactDocumentCardProps) => {
+const DocumentCard = ({ document, onDelete }: CompactDocumentCardProps) => {
   const getIcon = () => {
     switch (document.type) {
       case 'website':
@@ -59,14 +56,29 @@ const DocumentCard = ({
     return size.replace('Bytes', 'B').replace('KB', 'K').replace('MB', 'M');
   };
 
-  const formatTimeAgo = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
+  // Fixed formatTimeAgo function with proper date handling
+  const formatTimeAgo = (date: Date | string) => {
+    try {
+      // Ensure we have a proper Date object
+      const dateObj = date instanceof Date ? date : new Date(date);
 
-    if (hours < 1) return 'now';
-    if (hours < 24) return `${hours}h`;
-    return `${Math.floor(hours / 24)}d`;
+      // Check if date is valid
+      if (isNaN(dateObj.getTime())) {
+        return 'unknown';
+      }
+
+      const now = new Date();
+      const diff = now.getTime() - dateObj.getTime();
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+
+      if (hours < 1) return 'now';
+      if (hours < 24) return `${hours}h`;
+      if (hours < 24 * 7) return `${Math.floor(hours / 24)}d`;
+      return `${Math.floor(hours / (24 * 7))}w`;
+    } catch (error) {
+      console.warn('Error formatting date:', error);
+      return 'unknown';
+    }
   };
 
   const Icon = getIcon();
