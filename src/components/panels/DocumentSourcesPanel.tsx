@@ -3,15 +3,11 @@
 import { useDocumentContext } from '@/contexts/DocumentContext';
 import { getSessionData, updateSessionDocuments } from '@/lib/sessionStorage';
 import { Document } from '@/types';
-import {
-  FileText,
-  Loader2,
-  Plus,
-} from 'lucide-react';
+import { FileText, Loader2, Plus } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import FileUploadDialog from '../FileUploadDialog';
-import CompactDocumentCard from '../DocumentCard';
+import DocumentCard from '../DocumentCard';
 
 interface ExtendedDocument extends Document {
   sourceUrl?: string;
@@ -30,14 +26,8 @@ export default function DocumentSourcesPanel() {
       try {
         const sessionData = getSessionData();
         if (sessionData && sessionData.documents) {
-          console.log(
-            'Loading documents from session:',
-            sessionData.documents.length,
-            sessionData.documents,
-          );
           setDocuments(sessionData.documents);
         } else {
-          console.log('No session documents found, initializing empty array');
           setDocuments([]);
         }
       } catch (error) {
@@ -54,7 +44,6 @@ export default function DocumentSourcesPanel() {
   // Save documents to session whenever they change
   useEffect(() => {
     if (!isLoading) {
-      console.log('Saving documents to session:', documents.length, documents);
       updateSessionDocuments(documents);
     }
   }, [documents, isLoading]);
@@ -104,15 +93,6 @@ export default function DocumentSourcesPanel() {
         try {
           const formData = new FormData();
           formData.append('file', file);
-
-          console.log(
-            'Starting upload for file:',
-            file.name,
-            'Size:',
-            file.size,
-            'Type:',
-            file.type,
-          );
 
           setDocuments((prev) =>
             prev.map((doc) =>
@@ -210,11 +190,9 @@ export default function DocumentSourcesPanel() {
 
     setDocuments((prev) => [...prev, newDoc]);
 
-    // Show processing toast
     const loadingToast = toast.loading('Processing text input...');
 
     try {
-      // Create a proper text file and upload it through the same pipeline
       const blob = new Blob([text], { type: 'text/plain' });
       const file = new File([blob], 'text-input.txt', { type: 'text/plain' });
 
@@ -266,7 +244,6 @@ export default function DocumentSourcesPanel() {
       });
     }
   }, []);
-
 
   const handleUrlSubmit = useCallback(
     async (url: string, type: 'youtube' | 'website') => {
@@ -411,22 +388,22 @@ export default function DocumentSourcesPanel() {
   return (
     <div className='h-full flex flex-col'>
       {/* Header */}
-      <div className='px-4 py-3 border-b border-gray-100 bg-slate-50/30'>
+      <div className='px-4 py-3 border-b border-gray-100 bg-slate-50/30 flex-shrink-0'>
         <p className='text-sm text-gray-600'>
           Upload and manage your documents
         </p>
       </div>
 
-      {/* Content */}
-      <div className='flex-1 flex flex-col p-4 min-h-0'>
-        {/* Add Content Button */}
-        <div className='mb-4'>
+      {/* Content - Reduced bottom padding from p-4 to px-4 py-2 */}
+      <div className='flex-1 flex flex-col px-4 py-2 min-h-0'>
+        {/* Add Content Button - Reduced margin bottom */}
+        <div className='mb-3 flex-shrink-0'>
           <FileUploadDialog
             onFileUpload={handleFiles}
             onTextSubmit={handleTextSubmit}
             onUrlSubmit={handleUrlSubmit}>
-            <button className='w-full flex items-center gap-3 p-3 border-2 border-dashed border-blue-200 rounded-lg hover:border-blue-300 hover:bg-blue-50/30 transition-all duration-200'>
-              <div className='w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center'>
+            <button className='w-full flex items-center gap-3 p-3 border-2 border-dashed border-blue-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/30 transition-all duration-200 group'>
+              <div className='w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors'>
                 <Plus className='w-4 h-4 text-blue-600' />
               </div>
               <div className='text-left'>
@@ -443,7 +420,7 @@ export default function DocumentSourcesPanel() {
 
         {/* Documents List */}
         <div className='flex-1 flex flex-col min-h-0'>
-          <div className='flex items-center justify-between mb-3'>
+          <div className='flex items-center justify-between mb-2 flex-shrink-0'>
             <h3 className='text-xs font-semibold text-gray-700 uppercase tracking-wider'>
               Documents
             </h3>
@@ -452,34 +429,64 @@ export default function DocumentSourcesPanel() {
             </span>
           </div>
 
-          <div className='flex-1 overflow-y-auto space-y-3'>
+          {/* Scrollable Documents Container with Conditional Thin Scrollbars - Reduced space between items */}
+          <div
+            className={`
+            flex-1 overflow-y-auto space-y-2 min-h-0 pb-1
+            ${
+              documents.length > 3
+                ? 'scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400 scrollbar-track-transparent'
+                : ''
+            }
+            scrollbar-thumb-rounded-full scrollbar-track-rounded-full
+          `}
+            style={{
+              scrollbarWidth: documents.length > 3 ? 'thin' : 'none',
+              scrollbarColor:
+                documents.length > 3
+                  ? '#d1d5db transparent'
+                  : 'transparent transparent',
+            }}>
             {isLoading ? (
-              <div className='text-center py-8'>
-                <div className='w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3'>
-                  <Loader2 className='w-5 h-5 text-gray-400 animate-spin' />
+              <div className='text-center py-6'>
+                <div className='w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3'>
+                  <Loader2 className='w-6 h-6 text-gray-400 animate-spin' />
                 </div>
-                <p className='text-xs font-medium text-gray-500 mb-1'>
+                <p className='text-sm font-medium text-gray-500 mb-1'>
                   Loading documents...
+                </p>
+                <p className='text-xs text-gray-400'>
+                  Please wait while we fetch your files
                 </p>
               </div>
             ) : documents.length === 0 ? (
               <div className='text-center py-8'>
-                <div className='w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3'>
-                  <FileText className='w-5 h-5 text-gray-400' />
+                <div className='w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-4'>
+                  <FileText className='w-8 h-8 text-gray-400' />
                 </div>
-                <p className='text-xs font-medium text-gray-500 mb-1'>
-                  No documents
+                <p className='text-sm font-medium text-gray-500 mb-2'>
+                  No documents yet
                 </p>
-                <p className='text-xs text-gray-400'>Upload to get started</p>
+                <p className='text-xs text-gray-400 mb-4'>
+                  Upload your first document to get started
+                </p>
+                <div className='flex justify-center'>
+                  <div className='px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium'>
+                    ✨ Ready to upload
+                  </div>
+                </div>
               </div>
             ) : (
               documents.map((doc) => {
                 const mappedDoc = {
                   id: doc.id,
                   name: doc.name,
-                  type: doc.metadata.type === 'video/youtube' ? 'youtube' as const : 
-                        doc.metadata.type === 'text/html' ? 'website' as const : 
-                        'file' as const,
+                  type:
+                    doc.metadata.type === 'video/youtube'
+                      ? ('youtube' as const)
+                      : doc.metadata.type === 'text/html'
+                      ? ('website' as const)
+                      : ('file' as const),
                   size: formatFileSize(doc.metadata.size),
                   status: doc.status,
                   chunksCount: doc.metadata.chunksCount,
@@ -487,9 +494,9 @@ export default function DocumentSourcesPanel() {
                   sourceUrl: doc.sourceUrl,
                   fileType: doc.fileType,
                 };
-                
+
                 return (
-                  <CompactDocumentCard
+                  <DocumentCard
                     key={doc.id}
                     document={mappedDoc}
                     onDelete={removeDocument}
