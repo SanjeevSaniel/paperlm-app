@@ -12,6 +12,10 @@
 
 A sophisticated Retrieval Augmented Generation (RAG) application that transforms how you interact with documents. Built with Next.js 15 and modern AI technologies, PaperLM offers advanced document analysis, intelligent chat capabilities, and comprehensive note-taking features inspired by Google NotebookLM.
 
+## 🎥 Demo
+
+📺 **[Watch Full Demo on YouTube](https://youtu.be/BzCKh6OFFFo)** - See PaperLM in action with document upload, AI chat, and smart notebook features
+
 ## ✨ Key Features
 
 ### 🎯 Advanced Document Processing
