@@ -182,31 +182,11 @@ export default function AIAssistantAnimation({
                 {phase === 2 && (
                   <div>
                     <h3 className='text-xl font-semibold text-slate-800 mb-2'>
-                      Ready to help! 💭
+                      ✨ Ready to analyze your documents
                     </h3>
                     <p className='text-sm text-slate-600 leading-relaxed mb-6'>
-                      Upload documents or start a conversation to begin
+                      Upload files and start intelligent conversations
                     </p>
-
-                    {/* Quick Actions */}
-                    <motion.div
-                      className='flex justify-center gap-3'
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.3, duration: 0.4 }}>
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        className='flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-full text-xs text-slate-700 shadow-sm cursor-pointer'>
-                        <FileText className='w-3 h-3' />
-                        Upload
-                      </motion.div>
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        className='flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-full text-xs text-slate-700 shadow-sm cursor-pointer'>
-                        <MessageCircle className='w-3 h-3' />
-                        Chat
-                      </motion.div>
-                    </motion.div>
                   </div>
                 )}
               </motion.div>
