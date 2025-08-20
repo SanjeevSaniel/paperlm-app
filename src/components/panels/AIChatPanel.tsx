@@ -1,34 +1,33 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
-import {
-  Send,
-  Bot,
-  User,
-  ExternalLink,
-  Loader2,
-  BookOpen,
-  Copy,
-  Plus,
-  ArrowUpRight,
-  Trash2,
-  MessageSquarePlus,
-} from 'lucide-react';
-import { ChatMessage } from '@/types';
 import { useDocumentContext } from '@/contexts/DocumentContext';
 import { useNotebookContext } from '@/contexts/NotebookContext';
 import { useUsage } from '@/contexts/UsageContext';
-import { useUser } from '@clerk/nextjs';
-import AIAssistantAnimation from '../AIAssistantAnimation';
 import {
   getSessionData,
+  NotebookNote,
   updateSessionChatMessages,
   updateSessionNotebookNotes,
-  NotebookNote,
 } from '@/lib/sessionStorage';
+import { ChatMessage } from '@/types';
+import { useUser } from '@clerk/nextjs';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  ArrowUpRight,
+  Bot,
+  Copy,
+  ExternalLink,
+  Loader2,
+  MessageSquarePlus,
+  Plus,
+  Send,
+  Trash2,
+  User,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
+import AIAssistantAnimation from '../AIAssistantAnimation';
 
 // Handle citation click to create notebook card
 interface Citation {
@@ -57,7 +56,8 @@ export default function AIChatPanel() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { hasDocuments, documentCount } = useDocumentContext();
   const { triggerRefresh } = useNotebookContext();
-  const { canUseService, incrementUsage, usageCount, maxFreeUsage } = useUsage();
+  const { canUseService, incrementUsage, usageCount, maxFreeUsage } =
+    useUsage();
   const { user } = useUser();
 
   // Clear chat functionality
@@ -77,7 +77,9 @@ export default function AIChatPanel() {
     updateSessionChatMessages([]);
     localStorage.setItem('paperlm_chat_history', JSON.stringify([]));
     // Generate new session ID
-    const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const newSessionId = `session_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
     localStorage.setItem('paperlm_session_id', newSessionId);
     toast.success('New chat session started!', {
       duration: 2000,
@@ -88,49 +90,63 @@ export default function AIChatPanel() {
   // Generate context-aware loading messages based on user query
   const getLoadingMessages = useCallback((query: string) => {
     const lowerQuery = query.toLowerCase();
-    
+
     // Detect query type and generate appropriate messages
     if (lowerQuery.includes('summary') || lowerQuery.includes('summarize')) {
       return [
         '📖 Reading through your documents...',
         '🔍 Identifying key points and themes...',
         '📝 Crafting a comprehensive summary...',
-        '✨ Finalizing your summary...'
+        '✨ Finalizing your summary...',
       ];
-    } else if (lowerQuery.includes('compare') || lowerQuery.includes('difference')) {
+    } else if (
+      lowerQuery.includes('compare') ||
+      lowerQuery.includes('difference')
+    ) {
       return [
         '🔍 Analyzing documents for comparison...',
         '⚖️ Identifying similarities and differences...',
         '📊 Building comparison analysis...',
-        '✨ Preparing detailed comparison...'
+        '✨ Preparing detailed comparison...',
       ];
     } else if (lowerQuery.includes('video') || lowerQuery.includes('youtube')) {
       return [
         '🎥 Processing video transcript...',
         '⏱️ Analyzing timeline and content...',
         '🔍 Searching through video segments...',
-        '✨ Preparing video-based response...'
+        '✨ Preparing video-based response...',
       ];
-    } else if (lowerQuery.includes('quote') || lowerQuery.includes('citation')) {
+    } else if (
+      lowerQuery.includes('quote') ||
+      lowerQuery.includes('citation')
+    ) {
       return [
         '📝 Searching for relevant quotes...',
         '🔍 Locating specific citations...',
         '📚 Cross-referencing sources...',
-        '✨ Preparing cited response...'
+        '✨ Preparing cited response...',
       ];
-    } else if (lowerQuery.includes('how') || lowerQuery.includes('why') || lowerQuery.includes('what')) {
+    } else if (
+      lowerQuery.includes('how') ||
+      lowerQuery.includes('why') ||
+      lowerQuery.includes('what')
+    ) {
       return [
         '🤔 Understanding your question...',
         '🔍 Searching through document content...',
         '🧠 Analyzing relevant information...',
-        '✨ Formulating detailed answer...'
+        '✨ Formulating detailed answer...',
       ];
-    } else if (lowerQuery.includes('list') || lowerQuery.includes('steps') || lowerQuery.includes('process')) {
+    } else if (
+      lowerQuery.includes('list') ||
+      lowerQuery.includes('steps') ||
+      lowerQuery.includes('process')
+    ) {
       return [
         '📋 Identifying key points...',
         '🔢 Organizing information systematically...',
         '📝 Structuring comprehensive list...',
-        '✨ Finalizing organized response...'
+        '✨ Finalizing organized response...',
       ];
     } else {
       // Generic messages for general queries
@@ -138,7 +154,7 @@ export default function AIChatPanel() {
         '🔍 Searching through your documents...',
         '🧠 Processing relevant information...',
         '📝 Analyzing content for insights...',
-        '✨ Crafting your response...'
+        '✨ Crafting your response...',
       ];
     }
   }, []);
@@ -243,7 +259,7 @@ export default function AIChatPanel() {
       // Add to existing notes
       const updatedNotes = [newNote, ...existingNotes];
       updateSessionNotebookNotes(updatedNotes);
-      
+
       // Trigger notebook refresh to show new note immediately
       triggerRefresh();
 
@@ -334,7 +350,7 @@ export default function AIChatPanel() {
         timestamp: new Date(),
         isAuthPrompt: true,
       };
-      
+
       setMessages((prev) => [...prev, authMessage]);
       return;
     }
@@ -412,10 +428,9 @@ export default function AIChatPanel() {
       <div className='px-4 py-2 border-b border-amber-100/80 bg-amber-50/30 shrink-0'>
         <div className='flex items-center justify-between'>
           <p className='text-sm text-gray-600'>
-            {hasDocuments 
+            {hasDocuments
               ? '🧠 AI Assistant ready • Ask me anything about your uploaded documents'
-              : '📄 Upload documents in Sources panel to unlock intelligent AI conversations'
-            }
+              : '📄 Upload documents in Sources panel to unlock intelligent AI conversations'}
           </p>
           <div className='flex items-center gap-2'>
             {/* Chat Management Buttons */}
@@ -441,63 +456,84 @@ export default function AIChatPanel() {
                 </motion.button>
               </>
             )}
-            <motion.div 
+            <motion.div
               className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border backdrop-blur-sm transition-all duration-300 ${
-                user 
-                  ? 'bg-blue-50/90 text-blue-600 border-blue-200/60 shadow-sm' 
-                  : canUseService 
-                    ? 'bg-green-50/90 text-green-600 border-green-200/60 shadow-sm' 
-                    : 'bg-red-50/90 text-red-600 border-red-200/60 shadow-sm'
+                user
+                  ? 'bg-blue-50/90 text-blue-600 border-blue-200/60 shadow-sm'
+                  : canUseService
+                  ? 'bg-green-50/90 text-green-600 border-green-200/60 shadow-sm'
+                  : 'bg-red-50/90 text-red-600 border-red-200/60 shadow-sm'
               }`}
               animate={{
-                boxShadow: user 
-                  ? '0 0 0 0 rgba(59, 130, 246, 0.5)' 
-                  : canUseService 
-                    ? '0 0 0 0 rgba(34, 197, 94, 0.5)'
-                    : '0 0 0 0 rgba(239, 68, 68, 0.5)'
+                boxShadow: user
+                  ? '0 0 0 0 rgba(59, 130, 246, 0.5)'
+                  : canUseService
+                  ? '0 0 0 0 rgba(34, 197, 94, 0.5)'
+                  : '0 0 0 0 rgba(239, 68, 68, 0.5)',
               }}
               whileHover={{
                 scale: 1.02,
-                boxShadow: user 
-                  ? '0 0 20px 2px rgba(59, 130, 246, 0.2)' 
-                  : canUseService 
-                    ? '0 0 20px 2px rgba(34, 197, 94, 0.2)'
-                    : '0 0 20px 2px rgba(239, 68, 68, 0.2)'
+                boxShadow: user
+                  ? '0 0 20px 2px rgba(59, 130, 246, 0.2)'
+                  : canUseService
+                  ? '0 0 20px 2px rgba(34, 197, 94, 0.2)'
+                  : '0 0 20px 2px rgba(239, 68, 68, 0.2)',
               }}
               transition={{ duration: 0.2 }}>
-              <motion.div 
+              <motion.div
                 className={`w-1 h-1 rounded-full ${
-                  user 
-                    ? 'bg-blue-500' 
-                    : canUseService 
-                      ? 'bg-green-500' 
-                      : 'bg-red-500'
+                  user
+                    ? 'bg-blue-500'
+                    : canUseService
+                    ? 'bg-green-500'
+                    : 'bg-red-500'
                 }`}
                 animate={{
                   scale: [1, 1.2, 1],
-                  opacity: [0.8, 1, 0.8]
+                  opacity: [0.8, 1, 0.8],
                 }}
                 transition={{
                   duration: 2,
                   repeat: Infinity,
-                  ease: 'easeInOut'
+                  ease: 'easeInOut',
                 }}
               />
-              <span className="text-[10px] leading-none">
-                {user 
-                  ? '∞' 
-                  : `${usageCount}/${maxFreeUsage}`
-                }
+              <span className='text-[10px] leading-none'>
+                {user ? '∞' : `${usageCount}/${maxFreeUsage}`}
               </span>
             </motion.div>
           </div>
         </div>
       </div>
 
-      {/* Messages section (bounded) */}
+      {/* Messages section (bounded) - Reduced padding and added conditional thin scrollbar */}
       <div className='flex-1 min-h-0'>
-        {/* Actual scroll area */}
-        <div className='h-full min-h-0 overflow-y-auto overflow-x-hidden p-4 space-y-3 relative'>
+        {/* Actual scroll area with conditional thin scrollbar */}
+        <div
+          className='h-full min-h-0 overflow-y-auto overflow-x-hidden px-4 py-2 space-y-3 relative hover:scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-track-gray-100 scrollbar-track-transparent scrollbar-thumb-rounded-full scrollbar-track-rounded-full'
+          style={{
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'transparent transparent',
+          }}>
+          <style jsx>{`
+            div::-webkit-scrollbar {
+              width: 4px;
+            }
+            div::-webkit-scrollbar-track {
+              background: transparent;
+            }
+            div::-webkit-scrollbar-thumb {
+              background: transparent;
+              border-radius: 2px;
+            }
+            div:hover::-webkit-scrollbar-thumb {
+              background: #d1d5db;
+            }
+            div:hover::-webkit-scrollbar-thumb:hover {
+              background: #9ca3af;
+            }
+          `}</style>
+
           <AIAssistantAnimation
             isVisible={showAnimation}
             onComplete={() => setShowAnimation(false)}
@@ -534,7 +570,7 @@ export default function AIChatPanel() {
                       <p className='whitespace-pre-wrap leading-relaxed'>
                         {message.content}
                       </p>
-                      
+
                       {/* Authentication Prompt */}
                       {message.isAuthPrompt && (
                         <div className='mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg'>
@@ -544,7 +580,8 @@ export default function AIChatPanel() {
                                 Ready to unlock unlimited access?
                               </p>
                               <p className='text-xs text-gray-600'>
-                                Sign in for unlimited queries, cloud sync, and premium features.
+                                Sign in for unlimited queries, cloud sync, and
+                                premium features.
                               </p>
                             </div>
                             <div className='flex gap-2'>
@@ -576,7 +613,6 @@ export default function AIChatPanel() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.3, ease: 'easeOut' }}
                             className='group bg-gradient-to-r from-purple-50/50 to-blue-50/30 border border-purple-200/50 rounded-lg overflow-hidden hover:from-purple-100/60 hover:to-blue-100/40 hover:border-purple-300/60 transition-all duration-200 hover:shadow-sm'>
-                            
                             {/* Header section */}
                             <div className='px-3 py-2 border-b border-purple-200/30 bg-purple-50/30'>
                               <div className='flex items-center justify-between gap-2'>
@@ -611,17 +647,25 @@ export default function AIChatPanel() {
                                   </blockquote>
 
                                   {/* Author and publication info */}
-                                  {(citation.author || citation.publishedAt) && (
+                                  {(citation.author ||
+                                    citation.publishedAt) && (
                                     <div className='flex items-center gap-2 text-xs text-gray-500'>
                                       {citation.author && (
-                                        <span className='truncate'>By {citation.author}</span>
+                                        <span className='truncate'>
+                                          By {citation.author}
+                                        </span>
                                       )}
-                                      {citation.author && citation.publishedAt && (
-                                        <span className='text-gray-400'>•</span>
-                                      )}
+                                      {citation.author &&
+                                        citation.publishedAt && (
+                                          <span className='text-gray-400'>
+                                            •
+                                          </span>
+                                        )}
                                       {citation.publishedAt && (
                                         <span className='whitespace-nowrap'>
-                                          {new Date(citation.publishedAt).toLocaleDateString()}
+                                          {new Date(
+                                            citation.publishedAt,
+                                          ).toLocaleDateString()}
                                         </span>
                                       )}
                                     </div>
@@ -658,7 +702,10 @@ export default function AIChatPanel() {
                                     <motion.button
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        window.open(citation.sourceUrl, '_blank');
+                                        window.open(
+                                          citation.sourceUrl,
+                                          '_blank',
+                                        );
                                       }}
                                       whileHover={{ scale: 1.05 }}
                                       whileTap={{ scale: 0.95 }}
@@ -698,37 +745,41 @@ export default function AIChatPanel() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
               className='flex gap-3'>
-              <motion.div 
+              <motion.div
                 className='w-6 h-6 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center flex-shrink-0 border border-purple-200'
-                animate={{ 
+                animate={{
                   scale: [1, 1.1, 1],
-                  rotate: [0, 5, -5, 0]
+                  rotate: [0, 5, -5, 0],
                 }}
-                transition={{ 
-                  duration: 2, 
-                  repeat: Infinity, 
-                  ease: 'easeInOut' 
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
                 }}>
                 <Bot className='w-3 h-3 text-purple-600' />
               </motion.div>
-              <motion.div 
+              <motion.div
                 className='bg-gradient-to-r from-white/90 to-purple-50/50 border border-purple-200/50 rounded-2xl px-4 py-3 shadow-lg backdrop-blur-sm'
-                animate={{ 
+                animate={{
                   boxShadow: [
                     '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                     '0 10px 15px -3px rgba(0, 0, 0, 0.15)',
-                    '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                  ]
+                    '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  ],
                 }}
                 transition={{ duration: 2, repeat: Infinity }}>
                 <div className='flex items-center gap-3'>
                   <motion.div
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: 'linear',
+                    }}
                     className='flex-shrink-0'>
                     <Loader2 className='w-4 h-4 text-purple-500' />
                   </motion.div>
-                  <motion.span 
+                  <motion.span
                     key={loadingMessageIndex}
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -738,23 +789,23 @@ export default function AIChatPanel() {
                     {getLoadingMessages(currentUserQuery)[loadingMessageIndex]}
                   </motion.span>
                 </div>
-                
+
                 {/* Progress indicator */}
-                <motion.div 
+                <motion.div
                   className='mt-2 h-1 bg-gray-200 rounded-full overflow-hidden'
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}>
                   <motion.div
                     className='h-full bg-gradient-to-r from-purple-400 to-blue-400 rounded-full'
-                    animate={{ 
+                    animate={{
                       x: ['-100%', '100%'],
-                      opacity: [0.7, 1, 0.7]
+                      opacity: [0.7, 1, 0.7],
                     }}
-                    transition={{ 
-                      duration: 2, 
-                      repeat: Infinity, 
-                      ease: 'easeInOut' 
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
                     }}
                     style={{ width: '30%' }}
                   />
@@ -767,8 +818,8 @@ export default function AIChatPanel() {
         </div>
       </div>
 
-      {/* Input */}
-      <div className='border-t border-slate-200 px-4 pt-3 pb-1 bg-white/50 shrink-0'>
+      {/* Input - Reduced bottom padding */}
+      <div className='border-t border-slate-200 px-4 pt-2 pb-1 bg-white/50 shrink-0'>
         <form
           onSubmit={handleSubmit}
           className='w-full'>
@@ -782,11 +833,11 @@ export default function AIChatPanel() {
                 setSingleRowHeight();
               }}
               placeholder={
-                !canUseService && !user 
-                  ? 'Sign in to continue chatting...' 
-                  : isSmallScreen 
-                    ? 'Type here...' 
-                    : 'Ask anything about your documents...'
+                !canUseService && !user
+                  ? 'Sign in to continue chatting...'
+                  : isSmallScreen
+                  ? 'Type here...'
+                  : 'Ask anything about your documents...'
               }
               disabled={isLoading || (!canUseService && !user)}
               rows={1}
@@ -813,9 +864,15 @@ export default function AIChatPanel() {
                   : 'text-white bg-[#7bc478] hover:bg-[#6bb068] shadow-sm hover:shadow-md cursor-pointer'
               }`}
               whileHover={
-                !inputValue.trim() || isLoading || !canUseService ? {} : { scale: 1.02 }
+                !inputValue.trim() || isLoading || !canUseService
+                  ? {}
+                  : { scale: 1.02 }
               }
-              whileTap={!inputValue.trim() || isLoading || !canUseService ? {} : { scale: 0.98 }}
+              whileTap={
+                !inputValue.trim() || isLoading || !canUseService
+                  ? {}
+                  : { scale: 0.98 }
+              }
               animate={
                 isLoading
                   ? {
@@ -837,11 +894,14 @@ export default function AIChatPanel() {
             </motion.button>
           </div>
         </form>
-        
-        {/* Instructions */}
+
+        {/* Instructions - Reduced top padding */}
         <div className='pt-1'>
           <p className='text-xs text-slate-500 text-center'>
-            Press Enter to send • {hasDocuments ? 'Ask questions, request summaries, or analyze content' : 'Add documents first to start chatting'}
+            Press Enter to send •{' '}
+            {hasDocuments
+              ? 'Ask questions, request summaries, or analyze content'
+              : 'Add documents first to start chatting'}
           </p>
         </div>
       </div>
