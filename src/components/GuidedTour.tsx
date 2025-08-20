@@ -1,427 +1,718 @@
 'use client';
 
-import { TourProvider, useTour } from '@reactour/tour';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Play, 
-  X, 
-  ChevronLeft, 
-  ChevronRight, 
+import {
+  Play,
+  X,
+  ChevronLeft,
+  ChevronRight,
   Sparkles,
   FileText,
   MessageSquare,
-  NotebookPen
+  NotebookPen,
+  Target,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
+import React from 'react';
 
 interface TourStep {
-  selector: string;
-  content: React.ReactNode;
-  position?: 'top' | 'bottom' | 'left' | 'right';
-  actionBefore?: () => void;
-  actionAfter?: () => void;
+  id: string;
+  title: string;
+  content: string;
+  target: string;
+  position: 'top' | 'bottom' | 'left' | 'right' | 'center';
+  icon?: React.ReactNode;
 }
 
 const tourSteps: TourStep[] = [
   {
-    selector: '[data-tour="welcome"]',
-    content: (
-      <motion.div 
-        className="text-center"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}>
-        <motion.div
-          animate={{ 
-            scale: [1, 1.1, 1],
-            rotate: [0, 5, -5, 0]
-          }}
-          transition={{ 
-            duration: 2, 
-            repeat: Infinity, 
-            ease: 'easeInOut' 
-          }}
-          className="mx-auto mb-4 w-12 h-12 bg-gradient-to-br from-purple-100 to-amber-100 rounded-xl flex items-center justify-center">
-          <Sparkles className="w-6 h-6 text-purple-600" />
-        </motion.div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Welcome to PaperLM! ✨
-        </h3>
-        <p className="text-sm text-gray-600 leading-relaxed">
-          Let's take a quick tour to help you get the most out of your AI-powered document analysis platform.
-        </p>
-      </motion.div>
-    ),
-    position: 'bottom'
+    id: 'welcome',
+    title: 'Welcome to PaperLM! ✨',
+    content: 'Let\'s take a quick tour to help you get the most out of your AI-powered document analysis platform.',
+    target: '[data-tour="welcome"]',
+    position: 'bottom',
+    icon: <Sparkles className='w-5 h-5 text-purple-600' />,
   },
   {
-    selector: '[data-tour="sources-panel"]',
-    content: (
-      <motion.div
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.4 }}>
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-            <FileText className="w-4 h-4 text-blue-600" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900">Sources Panel</h3>
-        </div>
-        <p className="text-sm text-gray-600 leading-relaxed mb-3">
-          Start here! Upload PDFs, documents, paste text, or add YouTube videos and websites. 
-          Watch beautiful animations as your content gets processed.
-        </p>
-        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-          <p className="text-xs text-blue-700 font-medium">
-            💡 Tip: Drag & drop files for the fastest upload experience!
-          </p>
-        </div>
-      </motion.div>
-    ),
-    position: 'right'
+    id: 'sources',
+    title: 'Sources Panel',
+    content: 'Start here! Upload PDFs, documents, paste text, or add YouTube videos and websites. Drag & drop files for the fastest upload experience!',
+    target: '[data-tour="sources-panel"]',
+    position: 'right',
+    icon: <FileText className='w-5 h-5 text-blue-600' />,
   },
   {
-    selector: '[data-tour="notebook-panel"]',
-    content: (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.1 }}>
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-            <NotebookPen className="w-4 h-4 text-amber-600" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900">Smart Notebook</h3>
-        </div>
-        <p className="text-sm text-gray-600 leading-relaxed mb-3">
-          AI automatically generates analysis cards for your documents. Create custom notes, 
-          generate insights across multiple documents, and organize your research.
-        </p>
-        <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
-          <p className="text-xs text-amber-700 font-medium">
-            ✨ Watch for gradient animations when AI is analyzing your content!
-          </p>
-        </div>
-      </motion.div>
-    ),
-    position: 'left'
+    id: 'notebook',
+    title: 'Smart Notebook',
+    content: 'AI automatically generates analysis cards for your documents. Create custom notes, generate insights, and organize your research. Watch for gradient animations when AI is analyzing your content!',
+    target: '[data-tour="notebook-panel"]',
+    position: 'left',
+    icon: <NotebookPen className='w-5 h-5 text-amber-600' />,
   },
   {
-    selector: '[data-tour="chat-panel"]',
-    content: (
-      <motion.div
-        initial={{ opacity: 0, x: 10 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.4, delay: 0.2 }}>
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-            <MessageSquare className="w-4 h-4 text-green-600" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900">AI Chat</h3>
-        </div>
-        <p className="text-sm text-gray-600 leading-relaxed mb-3">
-          Ask questions about your documents! Get intelligent responses with source citations. 
-          The AI understands context across all your uploaded content.
-        </p>
-        <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-          <p className="text-xs text-green-700 font-medium">
-            💬 Try: "Summarize the main points" or "Compare these documents"
-          </p>
-        </div>
-      </motion.div>
-    ),
-    position: 'left'
+    id: 'chat',
+    title: 'AI Chat',
+    content: 'Ask questions about your documents! Get intelligent responses with source citations. Try: "Summarize the main points" or "Compare these documents"',
+    target: '[data-tour="chat-panel"]',
+    position: 'left',
+    icon: <MessageSquare className='w-5 h-5 text-green-600' />,
   },
   {
-    selector: '[data-tour="usage-indicator"]',
-    content: (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, delay: 0.3 }}>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Usage Tracking
-        </h3>
-        <p className="text-sm text-gray-600 leading-relaxed mb-3">
-          Keep track of your AI queries here. Guest users get 10 free queries per session. 
-          Sign up for unlimited access!
-        </p>
-        <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
-          <p className="text-xs text-purple-700 font-medium">
-            🔥 Pro tip: Sign in for unlimited queries and cloud sync!
-          </p>
-        </div>
-      </motion.div>
-    ),
-    position: 'bottom'
+    id: 'account',
+    title: 'User Account',
+    content: 'Guest users get 10 free queries per session. Sign up for unlimited access and cloud sync!',
+    target: '[data-tour="usage-indicator"], .cl-userButtonTrigger',
+    position: 'bottom',
+    icon: <Target className='w-5 h-5 text-purple-600' />,
   },
   {
-    selector: '[data-tour="welcome"]',
-    content: (
-      <motion.div 
-        className="text-center"
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}>
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ 
-            duration: 0.6,
-            ease: [0.34, 1.56, 0.64, 1],
-            delay: 0.2
-          }}
-          className="mx-auto mb-4 w-16 h-16 bg-gradient-to-br from-green-100 to-blue-100 rounded-xl flex items-center justify-center border-2 border-green-200">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, ease: 'linear' }}>
-            ✨
-          </motion.div>
-        </motion.div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">
-          You're All Set! 🎉
-        </h3>
-        <p className="text-sm text-gray-600 leading-relaxed mb-4">
-          Start by uploading your first document in the Sources panel, then chat with your AI assistant!
-        </p>
-        <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border border-green-200">
-          <p className="text-xs text-gray-700 font-medium">
-            💡 Need help anytime? Look for the tour button in the header to restart this guide.
-          </p>
-        </div>
-      </motion.div>
-    ),
-    position: 'bottom'
-  }
+    id: 'complete',
+    title: 'You\'re All Set! 🎉',
+    content: 'Start by uploading your first document in the Sources panel, then chat with your AI assistant! Need help anytime? Look for the tour button in the header.',
+    target: '[data-tour="welcome"]',
+    position: 'bottom',
+    icon: <div className='text-2xl'>🎉</div>,
+  },
 ];
 
-// Custom Tour Badge Component
-function TourBadge({ 
-  children, 
-  badgeContent, 
-  className = "",
-  onClick 
-}: { 
-  children: React.ReactNode;
-  badgeContent?: React.ReactNode;
-  className?: string;
-  onClick?: () => void;
-}) {
-  return (
-    <motion.div 
-      className={`relative ${className}`}
-      whileHover={{ scale: 1.02 }}
-      onClick={onClick}>
-      {children}
-      {badgeContent && (
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ 
-            duration: 0.3,
-            ease: [0.34, 1.56, 0.64, 1],
-            delay: 0.5
-          }}
-          className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-1.5 py-0.5 rounded-full font-medium shadow-lg">
-          {badgeContent}
-        </motion.div>
-      )}
-    </motion.div>
-  );
+// Tour Context
+interface TourContextType {
+  isOpen: boolean;
+  currentStep: number;
+  startTour: () => void;
+  closeTour: () => void;
+  nextStep: () => void;
+  prevStep: () => void;
+  goToStep: (step: number) => void;
+}
+
+const TourContext = createContext<TourContextType | null>(null);
+
+export function useTour() {
+  const context = useContext(TourContext);
+  if (!context) {
+    throw new Error('useTour must be used within TourProvider');
+  }
+  return context;
 }
 
 // Tour Control Button
-function TourButton() {
-  const { setIsOpen } = useTour();
+export function TourButton() {
+  const { startTour } = useTour();
   const [hasSeenTour, setHasSeenTour] = useState(false);
 
   useEffect(() => {
-    const seen = localStorage.getItem('paperlm_tour_seen');
-    setHasSeenTour(!!seen);
-    
-    // Auto-start tour for new users after a delay
-    if (!seen) {
-      const timer = setTimeout(() => {
-        setIsOpen(true);
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [setIsOpen]);
+    try {
+      const seen = localStorage.getItem('paperlm_tour_seen');
+      setHasSeenTour(!!seen);
 
-  const startTour = () => {
-    setIsOpen(true);
-    localStorage.setItem('paperlm_tour_seen', 'true');
-    setHasSeenTour(true);
-  };
+      // Auto-start tour for new users after a delay
+      if (!seen) {
+        const timer = setTimeout(() => {
+          startTour();
+        }, 3000);
+        return () => clearTimeout(timer);
+      }
+    } catch (error) {
+      console.warn('Tour initialization error:', error);
+    }
+  }, [startTour]);
 
   return (
-    <TourBadge 
-      badgeContent={!hasSeenTour ? "New!" : undefined}
-      onClick={startTour}>
+    <div className='relative'>
       <motion.button
-        className="flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-full hover:bg-purple-50 transition-all duration-200 text-sm font-medium text-gray-700"
+        onClick={startTour}
+        className='flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm border border-purple-200/50 rounded-full hover:bg-purple-50 transition-all duration-200 text-sm font-medium text-gray-700'
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        title="Take a guided tour">
-        <Play className="w-3 h-3" />
-        <span className="hidden sm:inline">Tour</span>
+        title='Take a guided tour'>
+        <Play className='w-3 h-3' />
+        <span className='hidden sm:inline'>Tour</span>
       </motion.button>
-    </TourBadge>
+      {!hasSeenTour && (
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.5 }}
+          className='absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-1.5 py-0.5 rounded-full font-medium shadow-lg'>
+          New!
+        </motion.div>
+      )}
+    </div>
   );
 }
 
-// Custom Tour Content Component with animations
-function CustomTourContent({ 
-  currentStep, 
-  totalSteps, 
-  content, 
-  setCurrentStep, 
-  setIsOpen 
-}: {
-  currentStep: number;
-  totalSteps: number;
-  content: React.ReactNode;
-  setCurrentStep: (step: number) => void;
-  setIsOpen: (open: boolean) => void;
-}) {
+// Helper function to calculate optimal position
+function calculatePopoverPosition(
+  targetRect: DOMRect,
+  popoverWidth: number,
+  popoverHeight: number,
+  preferredPosition: string
+) {
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const padding = 20;
+  
+  // Remove unused variables - positioning is handled differently now
+  
+  // Calculate positions for each side
+  const positions = {
+    top: {
+      left: targetRect.left + targetRect.width / 2 - popoverWidth / 2,
+      top: targetRect.top - popoverHeight - padding,
+    },
+    bottom: {
+      left: targetRect.left + targetRect.width / 2 - popoverWidth / 2,
+      top: targetRect.bottom + padding,
+    },
+    left: {
+      left: targetRect.left - popoverWidth - padding,
+      top: targetRect.top + targetRect.height / 2 - popoverHeight / 2,
+    },
+    right: {
+      left: targetRect.right + padding,
+      top: targetRect.top + targetRect.height / 2 - popoverHeight / 2,
+    },
+    center: {
+      left: viewportWidth / 2 - popoverWidth / 2,
+      top: viewportHeight / 2 - popoverHeight / 2,
+    },
+  };
+  
+  // Try preferred position first
+  const preferred = positions[preferredPosition as keyof typeof positions];
+  if (preferred &&
+      preferred.left >= padding &&
+      preferred.left + popoverWidth <= viewportWidth - padding &&
+      preferred.top >= padding &&
+      preferred.top + popoverHeight <= viewportHeight - padding) {
+    return { ...preferred, position: preferredPosition };
+  }
+  
+  // Try other positions if preferred doesn't fit
+  const fallbackOrder = ['bottom', 'top', 'right', 'left', 'center'];
+  for (const pos of fallbackOrder) {
+    if (pos === preferredPosition) continue;
+    const candidate = positions[pos as keyof typeof positions];
+    if (candidate &&
+        candidate.left >= padding &&
+        candidate.left + popoverWidth <= viewportWidth - padding &&
+        candidate.top >= padding &&
+        candidate.top + popoverHeight <= viewportHeight - padding) {
+      return { ...candidate, position: pos };
+    }
+  }
+  
+  // Fallback to center if nothing fits
+  return { ...positions.center, position: 'center' };
+}
+
+// Tour Overlay Component
+function TourOverlay() {
+  const { isOpen, currentStep, closeTour, nextStep, prevStep } = useTour();
+  // targetElement state removed as it's not being used
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [popoverPosition, setPopoverPosition] = useState({ left: 0, top: 0, position: 'center' });
+  const [popoverRef, setPopoverRef] = useState<HTMLDivElement | null>(null);
+
+  const currentStepData = tourSteps[currentStep];
   const isFirst = currentStep === 0;
-  const isLast = currentStep === totalSteps - 1;
+  const isLast = currentStep === tourSteps.length - 1;
+
+  // Find and highlight target element
+  useEffect(() => {
+    if (isOpen && currentStepData) {
+      const findElement = () => {
+        const element = document.querySelector(currentStepData.target);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          setTargetRect(rect);
+          
+          // Scroll element into view with some offset
+          const elementTop = rect.top + window.pageYOffset;
+          const elementCenter = elementTop - window.innerHeight / 2 + rect.height / 2;
+          window.scrollTo({
+            top: Math.max(0, elementCenter),
+            behavior: 'smooth'
+          });
+          
+          return true;
+        }
+        return false;
+      };
+      
+      // Try to find element immediately
+      if (!findElement()) {
+        // If not found, try again after a short delay
+        const timeout = setTimeout(findElement, 100);
+        return () => clearTimeout(timeout);
+      }
+    }
+  }, [isOpen, currentStep, currentStepData]);
+  
+  // Calculate popover position when target rect or popover ref changes
+  useEffect(() => {
+    if (targetRect && popoverRef && currentStepData) {
+      const popoverRect = popoverRef.getBoundingClientRect();
+      const newPosition = calculatePopoverPosition(
+        targetRect,
+        popoverRect.width || 320, // fallback width
+        popoverRect.height || 400, // fallback height
+        currentStepData.position
+      );
+      setPopoverPosition(newPosition);
+    }
+  }, [targetRect, popoverRef, currentStepData]);
 
   const handleNext = () => {
     if (isLast) {
-      setIsOpen(false);
       localStorage.setItem('paperlm_tour_seen', 'true');
+      closeTour();
     } else {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const handlePrev = () => {
-    if (!isFirst) {
-      setCurrentStep(currentStep - 1);
+      nextStep();
     }
   };
 
   const handleSkip = () => {
-    setIsOpen(false);
     localStorage.setItem('paperlm_tour_seen', 'true');
+    closeTour();
   };
 
+  if (!isOpen || !currentStepData) return null;
+
   return (
-    <motion.div
-      key={currentStep}
-      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95, y: -10 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="bg-white rounded-xl shadow-xl border border-gray-200/50 p-6 max-w-sm backdrop-blur-sm">
-      
-      {/* Progress indicator */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-1">
-          {Array.from({ length: totalSteps }, (_, i) => (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className='fixed inset-0 z-[9999]'
+        onClick={handleSkip}>
+        
+        {/* Backdrop overlay with cutout */}
+        {targetRect && (
+          <div className='absolute inset-0'>
+            {/* Top overlay */}
+            <div 
+              className='absolute bg-black/40 backdrop-blur-sm'
+              style={{
+                left: 0,
+                top: 0,
+                right: 0,
+                height: Math.max(0, targetRect.top - 12)
+              }}
+            />
+            {/* Bottom overlay */}
+            <div 
+              className='absolute bg-black/40 backdrop-blur-sm'
+              style={{
+                left: 0,
+                top: targetRect.bottom + 12,
+                right: 0,
+                bottom: 0
+              }}
+            />
+            {/* Left overlay */}
+            <div 
+              className='absolute bg-black/40 backdrop-blur-sm'
+              style={{
+                left: 0,
+                top: Math.max(0, targetRect.top - 12),
+                width: Math.max(0, targetRect.left - 12),
+                height: targetRect.height + 24
+              }}
+            />
+            {/* Right overlay */}
+            <div 
+              className='absolute bg-black/40 backdrop-blur-sm'
+              style={{
+                left: targetRect.right + 12,
+                top: Math.max(0, targetRect.top - 12),
+                right: 0,
+                height: targetRect.height + 24
+              }}
+            />
+            
+            {/* Target frame - transparent with visible border */}
             <motion.div
-              key={i}
-              className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-                i === currentStep ? 'bg-purple-500' : 'bg-gray-200'
-              }`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className='absolute rounded-xl border-4 border-purple-400 bg-transparent shadow-2xl'
+              style={{
+                left: targetRect.left - 12,
+                top: targetRect.top - 12,
+                width: targetRect.width + 24,
+                height: targetRect.height + 24,
+                boxShadow: '0 0 0 3px rgba(255, 255, 255, 0.9), 0 0 40px rgba(147, 51, 234, 0.5), inset 0 0 0 2px rgba(147, 51, 234, 0.3)',
+              }}
+            />
+          </div>
+        )}
+          
+        {/* Semi-circular Arrow pointing to target */}
+        {targetRect && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.3 }}
+              animate={{ 
+                opacity: 1, 
+                scale: 1,
+              }}
+              className='absolute z-[10001]'
+              style={{
+                // Position arrows to be visible and point at the frame border
+                left: popoverPosition.position === 'bottom' ? Math.max(20, Math.min(window.innerWidth - 100, targetRect.left + targetRect.width / 2 - 40)) : 
+                     popoverPosition.position === 'top' ? Math.max(20, Math.min(window.innerWidth - 100, targetRect.left + targetRect.width / 2 - 40)) :
+                     popoverPosition.position === 'left' ? Math.min(window.innerWidth - 100, targetRect.right + 20) :
+                     popoverPosition.position === 'right' ? Math.max(20, targetRect.left - 100) :
+                     Math.max(20, Math.min(window.innerWidth - 100, targetRect.left + targetRect.width / 2 - 40)),
+                top: popoverPosition.position === 'bottom' ? Math.max(20, targetRect.top - 90) :
+                     popoverPosition.position === 'top' ? Math.min(window.innerHeight - 100, targetRect.bottom + 20) :
+                     popoverPosition.position === 'left' ? Math.max(20, Math.min(window.innerHeight - 100, targetRect.top + targetRect.height / 2 - 40)) :
+                     popoverPosition.position === 'right' ? Math.max(20, Math.min(window.innerHeight - 100, targetRect.top + targetRect.height / 2 - 40)) :
+                     Math.max(20, targetRect.top - 90),
+              }}>
+              
+              {/* Realistic curved arrow SVG */}
+              <motion.svg
+                width="80"
+                height="80"
+                viewBox="0 0 80 80"
+                className="drop-shadow-xl">
+                
+                {/* Glowing background */}
+                <defs>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feMerge> 
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                  <linearGradient id="arrowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="rgb(168, 85, 247)" />
+                    <stop offset="100%" stopColor="rgb(147, 51, 234)" />
+                  </linearGradient>
+                </defs>
+                
+                {/* Semi-circular curved arrows based on position */}
+                {popoverPosition.position === 'bottom' && (
+                  <g>
+                    <motion.path
+                      d="M25 10 Q40 0, 55 10 Q50 20, 40 65"
+                      stroke="url(#arrowGrad)"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      fill="none"
+                      filter="url(#glow)"
+                      initial={{ pathLength: 0, opacity: 0 }}
+                      animate={{ 
+                        pathLength: 1, 
+                        opacity: 1,
+                      }}
+                      transition={{ duration: 1.2, ease: "easeInOut" }}
+                    />
+                    <motion.polygon
+                      points="40,65 35,55 40,50 45,55"
+                      fill="url(#arrowGrad)"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.8, duration: 0.4 }}
+                    />
+                  </g>
+                )}
+                
+                {popoverPosition.position === 'top' && (
+                  <g>
+                    <motion.path
+                      d="M25 70 Q40 80, 55 70 Q50 60, 40 15"
+                      stroke="url(#arrowGrad)"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      fill="none"
+                      filter="url(#glow)"
+                      initial={{ pathLength: 0, opacity: 0 }}
+                      animate={{ 
+                        pathLength: 1, 
+                        opacity: 1,
+                      }}
+                      transition={{ duration: 1.2, ease: "easeInOut" }}
+                    />
+                    <motion.polygon
+                      points="40,15 35,25 40,30 45,25"
+                      fill="url(#arrowGrad)"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.8, duration: 0.4 }}
+                    />
+                  </g>
+                )}
+                
+                {popoverPosition.position === 'left' && (
+                  <g>
+                    <motion.path
+                      d="M65 25 Q75 40, 65 55 Q55 50, 15 40"
+                      stroke="url(#arrowGrad)"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      fill="none"
+                      filter="url(#glow)"
+                      initial={{ pathLength: 0, opacity: 0 }}
+                      animate={{ 
+                        pathLength: 1, 
+                        opacity: 1,
+                      }}
+                      transition={{ duration: 1.2, ease: "easeInOut" }}
+                    />
+                    <motion.polygon
+                      points="15,40 25,35 30,40 25,45"
+                      fill="url(#arrowGrad)"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.8, duration: 0.4 }}
+                    />
+                  </g>
+                )}
+                
+                {popoverPosition.position === 'right' && (
+                  <g>
+                    <motion.path
+                      d="M15 25 Q5 40, 15 55 Q25 50, 65 40"
+                      stroke="url(#arrowGrad)"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      fill="none"
+                      filter="url(#glow)"
+                      initial={{ pathLength: 0, opacity: 0 }}
+                      animate={{ 
+                        pathLength: 1, 
+                        opacity: 1,
+                      }}
+                      transition={{ duration: 1.2, ease: "easeInOut" }}
+                    />
+                    <motion.polygon
+                      points="65,40 55,35 50,40 55,45"
+                      fill="url(#arrowGrad)"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.8, duration: 0.4 }}
+                    />
+                  </g>
+                )}
+                
+                {/* Animated pulsing dot at curve start */}
+                <motion.circle
+                  cx={popoverPosition.position === 'bottom' ? 25 : 
+                      popoverPosition.position === 'top' ? 25 :
+                      popoverPosition.position === 'left' ? 65 : 15}
+                  cy={popoverPosition.position === 'bottom' ? 10 : 
+                      popoverPosition.position === 'top' ? 70 :
+                      popoverPosition.position === 'left' ? 25 : 25}
+                  r="4"
+                  fill="url(#arrowGrad)"
+                  initial={{ scale: 0 }}
+                  animate={{ 
+                    scale: [1, 1.4, 1],
+                    opacity: [0.9, 0.5, 0.9]
+                  }}
+                  transition={{ 
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
+              </motion.svg>
+              
+              {/* Floating step indicator */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5, duration: 0.4 }}
+                className="absolute -top-3 -right-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white text-sm font-bold w-8 h-8 rounded-full flex items-center justify-center shadow-xl border-3 border-white">
+                {currentStep + 1}
+              </motion.div>
+            </motion.div>
+          )}
+
+        {/* Tour popover */}
+        <motion.div
+          ref={setPopoverRef}
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ 
+            opacity: 1, 
+            scale: 1, 
+            x: popoverPosition.left,
+            y: popoverPosition.top
+          }}
+          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          onClick={(e) => e.stopPropagation()}
+          className='absolute bg-white rounded-2xl shadow-2xl border border-gray-200/50 p-6 w-80 backdrop-blur-xl'
+          style={{
+            left: 0,
+            top: 0,
+            maxWidth: 'calc(100vw - 40px)',
+            zIndex: 10000,
+          }}>
+          
+          {/* Subtle pointer dot */}
+          {targetRect && popoverPosition.position !== 'center' && (
+            <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ delay: i * 0.1 }}
+              transition={{ delay: 0.2, duration: 0.3 }}
+              className='absolute w-2 h-2 bg-purple-500 rounded-full shadow-sm'
+              style={{
+                left: popoverPosition.position === 'left' ? '100%' :
+                      popoverPosition.position === 'right' ? '-4px' :
+                      '50%',
+                top: popoverPosition.position === 'top' ? '100%' :
+                     popoverPosition.position === 'bottom' ? '-4px' :
+                     '50%',
+                transform: popoverPosition.position === 'left' || popoverPosition.position === 'right' ?
+                          'translateY(-50%)' :
+                          'translateX(-50%)',
+                marginLeft: popoverPosition.position === 'left' ? '-4px' : '0',
+                marginTop: popoverPosition.position === 'top' ? '-4px' : '0',
+              }}
             />
-          ))}
-        </div>
-        <motion.button
-          onClick={handleSkip}
-          className="text-gray-400 hover:text-gray-600 transition-colors p-1"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}>
-          <X className="w-4 h-4" />
-        </motion.button>
-      </div>
+          )}
+          
+          {/* Header */}
+          <div className='flex items-start justify-between mb-4'>
+            <div className='flex items-center gap-3 flex-1'>
+              <div className='w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl flex items-center justify-center border border-purple-200/50 shadow-sm'>
+                {currentStepData.icon}
+              </div>
+              <div className='flex-1 min-w-0'>
+                <h3 className='font-semibold text-gray-900 text-lg leading-tight mb-1'>
+                  {currentStepData.title}
+                </h3>
+                <span className='text-xs text-purple-600 font-medium bg-purple-50 px-2 py-1 rounded-full'>
+                  Step {currentStep + 1} of {tourSteps.length}
+                </span>
+              </div>
+            </div>
+            <motion.button
+              onClick={handleSkip}
+              className='text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-all duration-200 ml-2'
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}>
+              <X className='w-5 h-5' />
+            </motion.button>
+          </div>
 
-      {/* Content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentStep}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.2 }}>
-          {content}
+          {/* Content */}
+          <div className='mb-6'>
+            <p className='text-sm text-gray-600 leading-relaxed'>
+              {currentStepData.content}
+            </p>
+          </div>
+
+          {/* Progress bar */}
+          <div className='mb-6'>
+            <div className='flex justify-between items-center mb-2'>
+              <span className='text-xs text-gray-500'>Progress</span>
+              <span className='text-xs text-gray-500'>
+                {Math.round(((currentStep + 1) / tourSteps.length) * 100)}%
+              </span>
+            </div>
+            <div className='w-full bg-gray-200 rounded-full h-2'>
+              <motion.div
+                className='bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full'
+                initial={{ width: 0 }}
+                animate={{ width: `${((currentStep + 1) / tourSteps.length) * 100}%` }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+              />
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <div className='flex justify-between items-center'>
+            <motion.button
+              onClick={prevStep}
+              disabled={isFirst}
+              className={`flex items-center gap-2 px-4 py-2 text-sm rounded-xl transition-all duration-200 ${
+                isFirst 
+                  ? 'text-gray-300 cursor-not-allowed' 
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              }`}
+              whileHover={!isFirst ? { scale: 1.02 } : {}}
+              whileTap={!isFirst ? { scale: 0.98 } : {}}>
+              <ChevronLeft className='w-4 h-4' />
+              Previous
+            </motion.button>
+            
+            <motion.button
+              onClick={handleNext}
+              className='flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white text-sm rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl'
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}>
+              {isLast ? (
+                <>
+                  Finish Tour
+                  <Sparkles className='w-4 h-4' />
+                </>
+              ) : (
+                <>
+                  Next
+                  <ChevronRight className='w-4 h-4' />
+                </>
+              )}
+            </motion.button>
+          </div>
         </motion.div>
-      </AnimatePresence>
-
-      {/* Navigation */}
-      <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
-        <motion.button
-          onClick={handlePrev}
-          disabled={isFirst}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-            isFirst 
-              ? 'text-gray-300 cursor-not-allowed' 
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-          }`}
-          whileHover={!isFirst ? { scale: 1.02 } : {}}
-          whileTap={!isFirst ? { scale: 0.98 } : {}}>
-          <ChevronLeft className="w-4 h-4" />
-          Previous
-        </motion.button>
-
-        <span className="text-xs text-gray-500 px-3">
-          {currentStep + 1} of {totalSteps}
-        </span>
-
-        <motion.button
-          onClick={handleNext}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-all duration-200"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}>
-          {isLast ? 'Finish' : 'Next'}
-          {!isLast && <ChevronRight className="w-4 h-4" />}
-        </motion.button>
-      </div>
-    </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
 // Main Tour Provider Component
 export function GuidedTourProvider({ children }: { children: React.ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+
+  const startTour = () => {
+    setCurrentStep(0);
+    setIsOpen(true);
+  };
+
+  const closeTour = () => {
+    setIsOpen(false);
+    setCurrentStep(0);
+  };
+
+  const nextStep = () => {
+    if (currentStep < tourSteps.length - 1) {
+      setCurrentStep(prev => prev + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+
+  const goToStep = (step: number) => {
+    if (step >= 0 && step < tourSteps.length) {
+      setCurrentStep(step);
+    }
+  };
+
+  const value: TourContextType = {
+    isOpen,
+    currentStep,
+    startTour,
+    closeTour,
+    nextStep,
+    prevStep,
+    goToStep,
+  };
+
   return (
-    <TourProvider
-      steps={tourSteps}
-      styles={{
-        popover: (base) => ({
-          ...base,
-          '--reactour-accent': '#9333ea',
-          borderRadius: '12px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-          padding: 0,
-          background: 'transparent',
-          border: 'none',
-        }),
-        maskArea: (base) => ({
-          ...base,
-          rx: 8,
-        }),
-        badge: (base) => ({
-          ...base,
-          display: 'none', // We'll use our custom content
-        }),
-      }}
-      components={{
-        Content: CustomTourContent,
-      }}
-      showBadge={false}
-      showCloseButton={false}
-      showNavigation={false}
-      showDots={false}
-      disableDotsNavigation={true}
-      padding={{ mask: 10, popover: [10, 10] }}
-      onClickMask={({ setIsOpen }) => setIsOpen(false)}>
+    <TourContext.Provider value={value}>
       {children}
-    </TourProvider>
+      <TourOverlay />
+    </TourContext.Provider>
   );
 }
-
-export { TourButton, TourBadge };
