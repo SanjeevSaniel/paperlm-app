@@ -4,6 +4,10 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Default model configuration - can be overridden via environment variable
+const DEFAULT_MODEL = 'gpt-4.1';
+export const OPENAI_MODEL = process.env.OPENAI_MODEL || DEFAULT_MODEL;
+
 export async function generateChatCompletion(
   messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
   context?: string,
@@ -22,7 +26,7 @@ ${context || '(no context provided)'}
   };
 
   const res = await openai.chat.completions.create({
-    model: 'gpt-4o-mini', // or 'gpt-4' if available
+    model: OPENAI_MODEL,
     messages: [system, ...messages],
     temperature: 0.3,
     max_tokens: 900,

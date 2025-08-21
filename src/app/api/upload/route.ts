@@ -1,14 +1,32 @@
 import { chunkDocument, extractTextFromFile } from '@/lib/documentProcessing';
 import { addDocuments } from '@/lib/qdrant';
+import { auth } from '@clerk/nextjs/server';
+import { getUserTypeFromId } from '@/lib/userIdGenerator';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
+    const { userId } = await auth();
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
+    const sessionId = formData.get('sessionId') as string | null;
+    const userEmail = formData.get('userEmail') as string | null;
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
+
+    // Determine the storage identifier: email for authenticated users, sessionId for free users
+    const storageId = userId && userEmail ? userEmail : sessionId;
+    
+    if (!storageId) {
+      return NextResponse.json({ error: 'No user email or session ID provided' }, { status: 400 });
+    }
+
+    // For non-authenticated users, enforce document limit
+    if (!userId) {
+      // Here you could add a check against existing documents for this session
+      // For now, the frontend will handle the limit checking
     }
 
     // console.log(
@@ -54,8 +72,17 @@ export async function POST(request: NextRequest) {
         fileType: file.type || 'text/plain',
         fileSize: file.size,
         uploadedAt: new Date().toISOString(),
+        sessionId: storageId, // Use email for authenticated users, sessionId for free users
+        userId: userId || storageId || 'unknown',
+        userType: userId ? 'registered_free' : (sessionId ? getUserTypeFromId(sessionId) : 'unknown'),
         // Add special flag for text input
         isTextInput: file.name === 'text-input.txt',
+        // Add missing required fields
+        sourceUrl: '',
+        loader: undefined,
+        extractedSections: [],
+        contextBefore: '',
+        contextAfter: '',
       },
     }));
 

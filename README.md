@@ -110,13 +110,13 @@ A sophisticated Retrieval Augmented Generation (RAG) application that transforms
 ### Step-by-Step Installation
 
 1. **Clone the Repository**
-2. 
+
    ```bash
    git clone https://github.com/yourusername/paperlm.git
    cd paperlm
    ```
 
-3. **Install Dependencies**
+2. **Install Dependencies**
 
    ```bash
    # Install all required packages
@@ -126,7 +126,7 @@ A sophisticated Retrieval Augmented Generation (RAG) application that transforms
    npm run build
    ```
 
-4. **Environment Configuration**
+3. **Environment Configuration**
 
    Create your environment configuration:
 
@@ -161,7 +161,7 @@ A sophisticated Retrieval Augmented Generation (RAG) application that transforms
    CLOUDINARY_API_SECRET=your_cloudinary_api_secret
    ```
 
-5. **Database Setup (Optional)**
+4. **Database Setup (Optional)**
 
    For persistent data storage across sessions:
 
@@ -185,7 +185,7 @@ A sophisticated Retrieval Augmented Generation (RAG) application that transforms
    3. Get connection string and update `MONGODB_URI`
    4. Add your IP to whitelist
 
-6. **Start the Development Server**
+5. **Start the Development Server**
 
    ```bash
    # Start the development server
@@ -195,7 +195,7 @@ A sophisticated Retrieval Augmented Generation (RAG) application that transforms
    # Hot reloading is enabled for development
    ```
 
-7. **Access the Application**
+6. **Access the Application**
    - Open your browser and navigate to [http://localhost:3000](http://localhost:3000)
    - The application will load with the three-panel interface
    - You can start using the app immediately without authentication (guest mode)
@@ -234,6 +234,7 @@ New to PaperLM? Don't worry! We've included a beautiful, interactive guided tour
 - **Smart Positioning**: Tour steps automatically position themselves optimally
 
 The tour covers:
+
 1. **Welcome & Overview** - Introduction to PaperLM's capabilities
 2. **Sources Panel** - How to upload documents and add content
 3. **Smart Notebook** - Understanding AI-generated insights and note creation
@@ -434,6 +435,34 @@ git checkout -b docs/update-readme
 git push origin docs/update-readme
 # Create PR to docs branch
 ```
+
+## 📚 Documentation
+
+Comprehensive documentation is available in the [`docs/`](./docs/) directory:
+
+### Quick Links
+
+- **🔐 [Authentication System](./docs/authentication/)** - Complete authentication and user management guide
+- **⚙️ [Configuration](./docs/configuration/)** - GPT-4.1 setup and system configuration  
+- **👨‍💻 [Development](./docs/development/)** - Developer workflow and team practices
+- **🚀 [Deployment](./docs/deployment/)** - Production deployment checklist
+- **🔗 [API Reference](./docs/api/)** - API documentation and specifications
+
+### For Different Audiences
+
+**Developers**: Start with [Authentication Quick Reference](./docs/authentication/AUTH_QUICK_REFERENCE.md) and [Development Workflow](./docs/development/DEV_WORKFLOW.md)
+
+**DevOps/Team Leads**: Review [Deployment Checklist](./docs/deployment/DEPLOYMENT_CHECKLIST.md) and [GPT-4.1 Configuration](./docs/configuration/GPT4.1_CONFIGURATION.md)
+
+**System Administrators**: Check [Authentication System Documentation](./docs/authentication/AUTHENTICATION_DOCUMENTATION.md) for complete implementation details
+
+### Documentation Highlights
+
+- **🎯 Step-by-step guides** with code examples
+- **🔧 Troubleshooting sections** for common issues  
+- **📊 Architecture diagrams** and technical specifications
+- **✅ Checklists** for setup and deployment
+- **🐛 Debugging guides** and performance tips
 
 ## 🚀 Deployment
 

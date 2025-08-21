@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Figtree, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import "../styles/landing.css";
 import { ClerkProvider } from '@clerk/nextjs';
 
 // Using Figtree for modern, elegant typography

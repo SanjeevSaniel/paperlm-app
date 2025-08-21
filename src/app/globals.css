@@ -102,6 +102,23 @@ body {
   scrollbar-color: #d1d5db transparent;
 }
 
+/* Notion-style scrollbar */
+.scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+}
+
+.hover\:scrollbar-thumb-gray-400:hover::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+}
+
+.scrollbar-track-transparent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thumb-rounded-full::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+}
+
 /* Glassmorphism effect for panels */
 .glass-effect {
   backdrop-filter: blur(10px);
@@ -127,6 +144,8 @@ body {
 .pulse-slow {
   animation: pulse-slow 2s ease-in-out infinite;
 }
+
+
 
 :root {
   --radius: 0.625rem;

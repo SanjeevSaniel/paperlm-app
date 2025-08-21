@@ -5,6 +5,7 @@ import { useNotebookContext } from '@/contexts/NotebookContext';
 import { useUsage } from '@/contexts/UsageContext';
 import {
   getSessionData,
+  getSessionId,
   NotebookNote,
   updateSessionChatMessages,
   updateSessionNotebookNotes,
@@ -30,8 +31,9 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import AIAssistantAnimation from '../AIAssistantAnimation';
+import MarkdownRenderer from '../MarkdownRenderer';
 
-// Handle citation click to create notebook card
+// Enhanced citation interface
 interface Citation {
   id: string;
   chunkId?: string;
@@ -44,6 +46,18 @@ interface Citation {
   relevanceScore: number;
   content: string;
   fullContent?: string;
+  // Enhanced citation fields
+  pageNumber?: number;
+  sectionTitle?: string;
+  exactLocation?: string;
+  confidence?: number;
+  contextBefore?: string;
+  contextAfter?: string;
+  citationFormat?: {
+    apa: string;
+    mla: string;
+    chicago: string;
+  };
 }
 
 export default function AIChatPanel() {
@@ -60,7 +74,7 @@ export default function AIChatPanel() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { hasDocuments, documentCount } = useDocumentContext();
   const { triggerRefresh } = useNotebookContext();
-  const { canUseService, incrementUsage, usageCount, maxFreeUsage } =
+  const { canChat, incrementChatUsage, chatCount, maxFreeChats } =
     useUsage();
   const { user } = useUser();
 
@@ -248,15 +262,25 @@ export default function AIChatPanel() {
         ? `📄 Citation: ${citation.documentName}`
         : '📄 Citation from Chat';
 
-      // Create formatted content with better structure
-      const formattedContent = `## 📚 Source Information
+      // Create enhanced formatted content with precise citation information
+      const formattedContent = `## 📚 Enhanced Source Information
 
 **Document:** ${citation.documentName || 'Unknown'}
-${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation.sourceUrl ? `**URL:** ${citation.sourceUrl}\n` : ''}${citation.author ? `**Author:** ${citation.author}\n` : ''}${citation.publishedAt ? `**Published:** ${citation.publishedAt}\n` : ''}**Relevance Score:** ${Math.round((citation.relevanceScore || 0) * 100)}%
+${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation.pageNumber ? `**Page:** ${citation.pageNumber}\n` : ''}${citation.sectionTitle ? `**Section:** ${citation.sectionTitle}\n` : ''}${citation.exactLocation ? `**Exact Location:** ${citation.exactLocation}\n` : ''}${citation.sourceUrl ? `**URL:** ${citation.sourceUrl}\n` : ''}${citation.author ? `**Author:** ${citation.author}\n` : ''}${citation.publishedAt ? `**Published:** ${citation.publishedAt}\n` : ''}
 
 ## 💬 Citation Content
 
 > "${citationContent}"
+
+${citation.contextBefore ? `\n**Context Before:** "${citation.contextBefore}"\n` : ''}${citation.contextAfter ? `**Context After:** "${citation.contextAfter}"\n` : ''}
+
+## 📖 Citation Formats
+
+${citation.citationFormat ? `**APA:** ${citation.citationFormat.apa}
+
+**MLA:** ${citation.citationFormat.mla}
+
+**Chicago:** ${citation.citationFormat.chicago}` : 'Citation formats not available'}
 
 ## 📝 Notes
 
@@ -361,12 +385,12 @@ ${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation
     if (!inputValue.trim() || isLoading) return;
 
     // Check usage limit
-    if (!canUseService && !user) {
+    if (!canChat) {
       // Show authentication prompt instead of just an error
       const authMessage: ChatMessage = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: `You've reached the free usage limit of ${maxFreeUsage} queries per session. Sign in to continue with unlimited access!`,
+        content: `You've reached the free chat limit of ${maxFreeChats} messages. Sign in to continue with unlimited access!`,
         timestamp: new Date(),
         isAuthPrompt: true,
       };
@@ -396,6 +420,8 @@ ${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: currentInput,
+          sessionId: getSessionId(),
+          userEmail: user?.primaryEmailAddress?.emailAddress,
           chatHistory: messages.slice(-5).map((m) => ({
             role: m.role,
             content: m.content,
@@ -407,16 +433,7 @@ ${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation
         const result = await response.json();
 
         // Increment usage count on successful response
-        incrementUsage();
-
-        // Deduplicate citations on client side as well
-        const uniqueCitations = new Map();
-        (result.citations || []).forEach((citation: Citation) => {
-          const key = citation.chunkId || citation.content; // Use chunkId or content as fallback
-          if (!uniqueCitations.has(key)) {
-            uniqueCitations.set(key, citation);
-          }
-        });
+        await incrementChatUsage();
 
         const assistantMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
@@ -425,7 +442,7 @@ ${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation
             result.response ||
             "I received your message but couldn't generate a proper response.",
           timestamp: new Date(),
-          citations: Array.from(uniqueCitations.values()),
+          citations: result.citations || [],
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
@@ -489,14 +506,14 @@ ${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation
               className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border backdrop-blur-sm transition-all duration-300 ${
                 user
                   ? 'bg-blue-50/90 text-blue-600 border-blue-200/60 shadow-sm'
-                  : canUseService
+                  : canChat
                   ? 'bg-green-50/90 text-green-600 border-green-200/60 shadow-sm'
                   : 'bg-red-50/90 text-red-600 border-red-200/60 shadow-sm'
               }`}
               animate={{
                 boxShadow: user
                   ? '0 0 0 0 rgba(59, 130, 246, 0.5)'
-                  : canUseService
+                  : canChat
                   ? '0 0 0 0 rgba(34, 197, 94, 0.5)'
                   : '0 0 0 0 rgba(239, 68, 68, 0.5)',
               }}
@@ -504,7 +521,7 @@ ${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation
                 scale: 1.02,
                 boxShadow: user
                   ? '0 0 20px 2px rgba(59, 130, 246, 0.2)'
-                  : canUseService
+                  : canChat
                   ? '0 0 20px 2px rgba(34, 197, 94, 0.2)'
                   : '0 0 20px 2px rgba(239, 68, 68, 0.2)',
               }}
@@ -513,7 +530,7 @@ ${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation
                 className={`w-1 h-1 rounded-full ${
                   user
                     ? 'bg-blue-500'
-                    : canUseService
+                    : canChat
                     ? 'bg-green-500'
                     : 'bg-red-500'
                 }`}
@@ -528,7 +545,7 @@ ${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation
                 }}
               />
               <span className='text-[10px] leading-none'>
-                {user ? '∞' : `${usageCount}/${maxFreeUsage}`}
+                {user ? '∞' : `${chatCount}/${maxFreeChats}`}
               </span>
             </motion.div>
           </div>
@@ -702,9 +719,16 @@ ${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation
                           ? 'bg-[#7bc478] text-white border-[#7bc478] shadow-sm'
                           : 'bg-white/80 text-slate-800 border-slate-200 shadow-sm'
                       }`}>
-                      <p className='whitespace-pre-wrap leading-relaxed'>
-                        {message.content}
-                      </p>
+                      {message.role === 'assistant' ? (
+                        <MarkdownRenderer 
+                          content={message.content}
+                          className="leading-relaxed"
+                        />
+                      ) : (
+                        <p className='whitespace-pre-wrap leading-relaxed'>
+                          {message.content}
+                        </p>
+                      )}
 
                       {/* Authentication Prompt */}
                       {message.isAuthPrompt && (
@@ -760,12 +784,19 @@ ${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation
                                   </span>
                                 </div>
                                 <div className='flex items-center gap-1 flex-shrink-0'>
-                                  <span className='text-xs bg-purple-200 text-purple-800 px-1.5 py-0.5 rounded-full font-medium'>
-                                    {Math.round(citation.relevanceScore * 100)}%
-                                  </span>
+                                  {(citation as any).pageNumber && (
+                                    <span className='text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium'>
+                                      Page {(citation as any).pageNumber}
+                                    </span>
+                                  )}
                                   {citation.documentType && (
                                     <span className='text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full'>
                                       {citation.documentType}
+                                    </span>
+                                  )}
+                                  {(citation as any).sectionTitle && (
+                                    <span className='text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full'>
+                                      {(citation as any).sectionTitle.length > 20 ? (citation as any).sectionTitle.substring(0, 20) + '...' : (citation as any).sectionTitle}
                                     </span>
                                   )}
                                 </div>
@@ -968,13 +999,13 @@ ${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation
                 setSingleRowHeight();
               }}
               placeholder={
-                !canUseService && !user
+                !canChat && !user
                   ? 'Sign in to continue chatting...'
                   : isSmallScreen
                   ? 'Type here...'
                   : 'Ask anything about your documents...'
               }
-              disabled={isLoading || (!canUseService && !user)}
+              disabled={isLoading || (!canChat && !user)}
               rows={1}
               className='w-full border-0 focus:ring-0 focus:border-0 outline-none bg-transparent resize-none pr-14 py-2 px-4 text-slate-800 placeholder-slate-400 shadow-none overflow-hidden h-[var(--chat-input-h)]'
               onKeyDown={(e) => {
@@ -992,19 +1023,19 @@ ${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation
             />
             <motion.button
               type='submit'
-              disabled={!inputValue.trim() || isLoading || !canUseService}
+              disabled={!inputValue.trim() || isLoading || !canChat}
               className={`absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all duration-200 ${
-                !inputValue.trim() || isLoading || !canUseService
+                !inputValue.trim() || isLoading || !canChat
                   ? 'text-slate-400 cursor-not-allowed'
                   : 'text-white bg-[#7bc478] hover:bg-[#6bb068] shadow-sm hover:shadow-md cursor-pointer'
               }`}
               whileHover={
-                !inputValue.trim() || isLoading || !canUseService
+                !inputValue.trim() || isLoading || !canChat
                   ? {}
                   : { scale: 1.02 }
               }
               whileTap={
-                !inputValue.trim() || isLoading || !canUseService
+                !inputValue.trim() || isLoading || !canChat
                   ? {}
                   : { scale: 0.98 }
               }
@@ -1020,7 +1051,7 @@ ${citation.documentType ? `**Type:** ${citation.documentType}\n` : ''}${citation
                     }
                   : {}
               }
-              title={!canUseService ? 'Usage limit reached' : undefined}>
+              title={!canChat ? 'Usage limit reached' : undefined}>
               {isLoading ? (
                 <Loader2 className='w-4 h-4' />
               ) : (

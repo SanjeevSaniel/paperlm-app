@@ -1,6 +1,7 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { GoogleGenAI } from '@google/genai';
 import { chunkDocument } from '@/lib/documentProcessing';
 import { addDocuments } from '@/lib/qdrant';
@@ -10,6 +11,7 @@ import {
   scrapeYouTubeContent,
   scrapeWithPuppeteer,
 } from '@/lib/urlScraping';
+import { getUserTypeFromId } from '@/lib/userIdGenerator';
 
 type ScrapeBody = {
   url: string;
@@ -18,6 +20,7 @@ type ScrapeBody = {
   sameOrigin?: boolean;
   limit?: number;
   loader?: 'recursive' | 'cheerio' | 'puppeteer';
+  sessionId?: string;
 };
 
 // Helper function to extract video ID from YouTube URL
@@ -85,8 +88,19 @@ Transcript: ${transcript.slice(0, 15000)}${
 
 export async function POST(request: NextRequest) {
   try {
+    // Get authenticated user
+    const { userId: clerkUserId } = await auth();
+    
+    if (!clerkUserId) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const body = (await request.json()) as ScrapeBody;
-    const { url, type, maxDepth, sameOrigin, limit, loader } = body || {};
+    const { url, type, maxDepth, sameOrigin, limit, loader, sessionId } = body || {};
+    
+    // Determine user type and effective userId
+    const userId = sessionId || clerkUserId;
+    const userType = sessionId ? getUserTypeFromId(sessionId) : 'registered_free';
     if (!url || !type) {
       return NextResponse.json(
         { success: false, error: 'URL and type are required' },
@@ -221,12 +235,18 @@ ${scraped.content}`;
         fileName: scraped!.title || 'Website',
         fileType,
         fileSize: scraped!.content.length,
+        sessionId: sessionId || clerkUserId,
+        userId: userId,
+        userType: userType as 'registered_free' | 'session' | 'temporary' | 'unknown',
         sourceUrl: url,
         loader:
           typeof scraped!.metadata?.loader === 'string'
             ? scraped!.metadata.loader
             : undefined,
         uploadedAt: new Date().toISOString(),
+        extractedSections: [],
+        contextBefore: '',
+        contextAfter: '',
       },
     }));
 

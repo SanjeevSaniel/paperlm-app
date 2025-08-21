@@ -1,51 +1,97 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useUser } from '@clerk/nextjs';
+import { useAuthStore } from '@/stores/authStore';
+import { useSubscription } from './SubscriptionContext';
 
 interface UsageContextType {
-  usageCount: number;
-  maxFreeUsage: number;
-  incrementUsage: () => void;
-  canUseService: boolean;
+  chatCount: number;
+  documentCount: number;
+  maxFreeChats: number;
+  maxFreeDocuments: number;
+  incrementChatUsage: () => Promise<boolean>;
+  incrementDocumentUsage: () => Promise<boolean>;
+  canChat: boolean;
+  canUploadDocument: boolean;
   resetUsage: () => void;
+  isAuthenticated: boolean;
 }
 
 const UsageContext = createContext<UsageContextType | undefined>(undefined);
 
 export function UsageProvider({ children }: { children: ReactNode }) {
-  const [usageCount, setUsageCount] = useState(0);
-  const maxFreeUsage = 10;
+  const { isSignedIn } = useUser();
+  const { user: authUser, incrementDocumentUsage: authIncrementDocument, incrementMessageUsage: authIncrementMessage } = useAuthStore();
+  const [chatCount, setChatCount] = useState(0);
+  const [documentCount, setDocumentCount] = useState(0);
+  
+  const maxFreeChats = 5;
+  const maxFreeDocuments = 1;
 
-  // Load usage count from localStorage
+  // Load usage counts from auth store for authenticated users
   useEffect(() => {
-    const savedUsage = localStorage.getItem('paperlm_usage_count');
-    if (savedUsage) {
-      setUsageCount(parseInt(savedUsage, 10));
+    if (isSignedIn && authUser) {
+      setChatCount(authUser.usage.messagesUsed);
+      setDocumentCount(authUser.usage.documentsUploaded);
+    } else {
+      // Reset counts for non-authenticated state (shouldn't happen due to middleware)
+      setChatCount(0);
+      setDocumentCount(0);
     }
-  }, []);
+  }, [isSignedIn, authUser]);
 
-  // Update usage count in localStorage
-  useEffect(() => {
-    localStorage.setItem('paperlm_usage_count', usageCount.toString());
-  }, [usageCount]);
-
-  const incrementUsage = () => {
-    setUsageCount(prev => prev + 1);
+  const incrementChatUsage = async (): Promise<boolean> => {
+    if (isSignedIn && authUser) {
+      // Use auth store for authenticated users
+      const success = await authIncrementMessage();
+      if (success) {
+        setChatCount(prev => prev + 1);
+      }
+      return success;
+    }
+    return false;
   };
 
-  const canUseService = usageCount < maxFreeUsage;
+  const incrementDocumentUsage = async (): Promise<boolean> => {
+    if (isSignedIn && authUser) {
+      // Use auth store for authenticated users
+      const success = await authIncrementDocument();
+      if (success) {
+        setDocumentCount(prev => prev + 1);
+      }
+      return success;
+    }
+    return false;
+  };
+
+  // Determine usage limits based on user type
+  const canChat = isSignedIn 
+    ? (authUser?.canSendMessage ?? false)
+    : false;
+    
+  const canUploadDocument = isSignedIn 
+    ? (authUser?.canUploadDocument ?? false) 
+    : false;
 
   const resetUsage = () => {
-    setUsageCount(0);
+    setChatCount(0);
+    setDocumentCount(0);
+    // No localStorage operations needed anymore since all users are authenticated
   };
 
   return (
     <UsageContext.Provider value={{
-      usageCount,
-      maxFreeUsage,
-      incrementUsage,
-      canUseService,
-      resetUsage
+      chatCount,
+      documentCount,
+      maxFreeChats,
+      maxFreeDocuments,
+      incrementChatUsage,
+      incrementDocumentUsage,
+      canChat,
+      canUploadDocument,
+      resetUsage,
+      isAuthenticated: !!isSignedIn
     }}>
       {children}
     </UsageContext.Provider>

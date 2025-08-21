@@ -14,9 +14,21 @@ export type RAGMetadata = {
   fileName: string;
   fileType: string;
   fileSize: number;
+  sessionId: string; // Legacy field, keeping for compatibility
+  userId: string; // New user ID field with meaningful prefixes
+  userType: 'registered_free' | 'registered_pro' | 'temporary' | 'session' | 'unknown';
   sourceUrl?: string;
   loader?: string;
   uploadedAt?: string;
+  // Enhanced citation information
+  pageNumber?: number;
+  sectionTitle?: string;
+  paragraphIndex?: number;
+  lineNumber?: number;
+  exactLocation?: string; // e.g., "Page 5, Section 2.1, Paragraph 3"
+  confidence?: number; // Confidence score for the match
+  contextBefore?: string; // Text before the match for better context
+  contextAfter?: string; // Text after the match for better context
 };
 
 export type RAGResult = {
@@ -104,9 +116,21 @@ export async function addDocuments(
       fileName: string;
       fileType: string;
       fileSize: number;
+      sessionId: string; // Legacy field
+      userId: string; // New user ID field
+      userType: 'registered_free' | 'registered_pro' | 'temporary' | 'session' | 'unknown';
       sourceUrl?: string;
       loader?: string;
       uploadedAt?: string;
+      // Enhanced citation information
+      pageNumber?: number;
+      sectionTitle?: string;
+      paragraphIndex?: number;
+      lineNumber?: number;
+      exactLocation?: string;
+      confidence?: number;
+      contextBefore?: string;
+      contextAfter?: string;
     };
   }>,
 ) {
@@ -141,6 +165,7 @@ export async function addDocuments(
       fileName: d.metadata.fileName,
       fileType: d.metadata.fileType,
       fileSize: d.metadata.fileSize,
+      sessionId: d.metadata.sessionId, // Add session isolation
       sourceUrl: d.metadata.sourceUrl || null,
       loader: d.metadata.loader || null,
       uploadedAt: d.metadata.uploadedAt || new Date().toISOString(),
@@ -163,6 +188,7 @@ export async function addDocuments(
       fileName: d.metadata.fileName,
       fileType: d.metadata.fileType,
       fileSize: d.metadata.fileSize,
+      sessionId: d.metadata.sessionId, // Add session isolation
       sourceUrl: d.metadata.sourceUrl,
       loader: d.metadata.loader,
       uploadedAt: d.metadata.uploadedAt || new Date().toISOString(),
@@ -202,17 +228,43 @@ export async function addDocuments(
 export async function similaritySearch(
   query: string,
   k = 8,
+  sessionId?: string, // Legacy parameter, keeping for compatibility
+  userId?: string, // New user ID parameter
 ): Promise<RAGResult[]> {
   const c = getClient();
   const qEmb = await embed(query);
 
   if (c) {
     try {
-      const hits = await c.search(COLLECTION_NAME, {
+      const searchParams: {
+        vector: number[];
+        limit: number;
+        with_payload: boolean;
+        filter?: {
+          must: Array<{
+            key: string;
+            match: { value: string };
+          }>;
+        };
+      } = {
         vector: qEmb,
         limit: k,
         with_payload: true,
-      });
+      };
+
+      // Add user/session filter - prioritize userId over sessionId
+      if (userId || sessionId) {
+        searchParams.filter = {
+          must: [
+            {
+              key: userId ? 'userId' : 'sessionId',
+              match: { value: userId || sessionId! }
+            }
+          ]
+        };
+      }
+
+      const hits = await c.search(COLLECTION_NAME, searchParams);
 
       const results = (hits || []).map((h) => {
         const p = h.payload as Record<string, unknown>;
@@ -238,10 +290,32 @@ export async function similaritySearch(
               ? p.fileType
               : String(p?.fileType ?? 'text/plain'),
           fileSize: Number(p?.fileSize ?? 0),
+          sessionId:
+            typeof p?.sessionId === 'string'
+              ? p.sessionId
+              : String(p?.sessionId ?? 'unknown'),
+          userId:
+            typeof p?.userId === 'string'
+              ? p.userId
+              : String(p?.userId ?? p?.sessionId ?? 'unknown'),
+          userType:
+            typeof p?.userType === 'string' && 
+            ['registered_free', 'registered_pro', 'temporary', 'session', 'unknown'].includes(p.userType)
+              ? p.userType as any
+              : 'unknown',
           sourceUrl: typeof p?.sourceUrl === 'string' ? p.sourceUrl : undefined,
           loader: typeof p?.loader === 'string' ? p.loader : undefined,
           uploadedAt:
             typeof p?.uploadedAt === 'string' ? p.uploadedAt : undefined,
+          // Enhanced citation information
+          pageNumber: typeof p?.pageNumber === 'number' ? p.pageNumber : undefined,
+          sectionTitle: typeof p?.sectionTitle === 'string' ? p.sectionTitle : undefined,
+          paragraphIndex: typeof p?.paragraphIndex === 'number' ? p.paragraphIndex : undefined,
+          lineNumber: typeof p?.lineNumber === 'number' ? p.lineNumber : undefined,
+          exactLocation: typeof p?.exactLocation === 'string' ? p.exactLocation : undefined,
+          confidence: typeof p?.confidence === 'number' ? p.confidence : h.score,
+          contextBefore: typeof p?.contextBefore === 'string' ? p.contextBefore : undefined,
+          contextAfter: typeof p?.contextAfter === 'string' ? p.contextAfter : undefined,
         };
         return {
           pageContent: typeof p?.content === 'string' ? p.content : '',
@@ -258,7 +332,7 @@ export async function similaritySearch(
     }
   }
 
-  // Memory fallback remains the same...
+  // Memory fallback with session filtering
   const cosine = (a: number[], b: number[]) => {
     let dot = 0,
       na = 0,
@@ -271,7 +345,14 @@ export async function similaritySearch(
     return dot / (Math.sqrt(na) * Math.sqrt(nb) + 1e-8);
   };
 
-  const results = memoryStore
+  // Filter by userId or sessionId if provided
+  const filteredStore = (userId || sessionId)
+    ? memoryStore.filter((item) => 
+        userId ? item.metadata.userId === userId : item.metadata.sessionId === sessionId
+      )
+    : memoryStore;
+
+  const results = filteredStore
     .map((c) => ({ c, score: cosine(qEmb, c.embedding) }))
     .sort((x, y) => y.score - x.score)
     .slice(0, k)

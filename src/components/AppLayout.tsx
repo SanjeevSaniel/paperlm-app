@@ -2,10 +2,10 @@
 
 import { DocumentProvider } from '@/contexts/DocumentContext';
 import { NotebookProvider } from '@/contexts/NotebookContext';
+import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { UsageProvider, useUsage } from '@/contexts/UsageContext';
-import { updateUserAuth } from '@/lib/sessionStorage';
 import { PanelType } from '@/types';
-import { UserButton, useUser } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ChevronLeft,
@@ -13,17 +13,19 @@ import {
   FileText,
   MessageSquare,
   NotebookPen,
-  Zap
 } from 'lucide-react';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { GuidedTourProvider, TourButton } from './GuidedTour';
 import Logo from './Logo';
+import UserMenu from './NotionUserMenu';
+import AuthProvider from './AuthProvider';
 import AIChatPanel from './panels/AIChatPanel';
 import DocumentSourcesPanel from './panels/DocumentSourcesPanel';
 import SmartNotebookPanel from './panels/SmartNotebookPanel';
 import { Card, CardContent, CardHeader } from './ui';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 // Props typing for the three panels
 type ChatPanelComponent = React.ComponentType<{ isCollapsed?: boolean }>;
@@ -45,9 +47,16 @@ type ChatPanelDef = BasePanelDef<'chat', ChatPanelComponent>;
 
 type PanelDef = SourcesPanelDef | NotebookPanelDef | ChatPanelDef;
 
-function AppLayoutContent() {
+function AppLayoutContent({ userId }: { userId?: string }) {
   const { user } = useUser();
-  const { usageCount, maxFreeUsage } = useUsage();
+  const {
+    chatCount,
+    documentCount,
+    maxFreeChats,
+    maxFreeDocuments,
+    canChat,
+    canUploadDocument,
+  } = useUsage();
   const [activeCards] = useState<PanelType[]>(['sources', 'notebook', 'chat']);
   const [collapsedPanels, setCollapsedPanels] = useState<Set<PanelType>>(
     new Set(),
@@ -62,12 +71,7 @@ function AppLayoutContent() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Sync user authentication with session storage
-  useEffect(() => {
-    if (user?.id && user?.primaryEmailAddress?.emailAddress) {
-      updateUserAuth(user.id, user.primaryEmailAddress.emailAddress);
-    }
-  }, [user]);
+  // Note: User auth is now handled by auth store and auth manager
 
   const panels: PanelDef[] = [
     {
@@ -123,55 +127,59 @@ function AppLayoutContent() {
   // Page loading component
   if (isPageLoading) {
     return (
-      <motion.div 
+      <motion.div
         className='h-screen bg-gradient-to-br from-purple-50/60 via-amber-50/50 to-orange-50/40 flex items-center justify-center'
         initial={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5 }}>
-        <motion.div 
+        <motion.div
           className='text-center'
           initial={{ opacity: 0, y: 20, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
           <motion.div
-            animate={{ 
+            animate={{
               scale: [1, 1.1, 1],
-              rotate: [0, 5, -5, 0]
+              rotate: [0, 5, -5, 0],
             }}
-            transition={{ 
-              duration: 2, 
-              repeat: Infinity, 
-              ease: 'easeInOut' 
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: 'easeInOut',
             }}>
-            <Logo size='lg' showText={true} animated={true} />
+            <Logo
+              size='lg'
+              showText={true}
+              animated={true}
+            />
           </motion.div>
           <motion.div
             className='mt-6 flex items-center justify-center gap-2'
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}>
-            <motion.div 
+            <motion.div
               className='w-2 h-2 bg-purple-400 rounded-full'
               animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 1, repeat: Infinity, delay: 0 }} 
+              transition={{ duration: 1, repeat: Infinity, delay: 0 }}
             />
-            <motion.div 
+            <motion.div
               className='w-2 h-2 bg-amber-400 rounded-full'
               animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 1, repeat: Infinity, delay: 0.2 }} 
+              transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
             />
-            <motion.div 
+            <motion.div
               className='w-2 h-2 bg-orange-400 rounded-full'
               animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 1, repeat: Infinity, delay: 0.4 }} 
+              transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
             />
           </motion.div>
-          <motion.p 
+          <motion.p
             className='mt-4 text-sm text-gray-600 font-light'
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.5 }}>
-Bringing your documents to life with AI...
+            Bringing your documents to life with AI...
           </motion.p>
         </motion.div>
       </motion.div>
@@ -186,21 +194,18 @@ Bringing your documents to life with AI...
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
       {/* Header */}
       <header className='px-8 py-2'>
-        <div className='max-w-screen-2xl mx-auto px-6 flex items-center justify-between'>
+        <div className='w-full px-6 flex items-center justify-between'>
           <div className='flex items-center gap-4'>
             <div data-tour='welcome'>
-              <Logo
-                size='sm'
-                showText={true}
-                animated={true}
-              />
+              <Link href='/'>
+                <Logo
+                  size='sm'
+                  showText={true}
+                  animated={true}
+                />
+              </Link>
             </div>
             <div className='hidden sm:block w-px h-6 bg-slate-300/60'></div>
-            <p
-              className='hidden sm:block text-sm text-slate-500 font-light tracking-wide'
-              style={{ fontWeight: 300 }}>
-              Transform documents into intelligent conversations
-            </p>
           </div>
 
           <div className='flex items-center gap-4'>
@@ -210,20 +215,30 @@ Bringing your documents to life with AI...
             {/* Usage Status - Only show for guest users */}
             {!user && (
               <div
-                className='flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm border border-amber-200/50 rounded-full'
+                className='flex items-center gap-3 px-3 py-1.5 bg-white/80 backdrop-blur-sm border border-amber-200/50 rounded-full'
                 data-tour='usage-indicator'>
-                <Zap
-                  className={`w-4 h-4 ${
-                    usageCount >= maxFreeUsage
-                      ? 'text-red-500'
-                      : 'text-amber-500'
-                  }`}
-                />
-                <span className='text-sm font-medium text-gray-700'>
-                  {usageCount}/{maxFreeUsage}
-                </span>
-                {usageCount >= maxFreeUsage && (
-                  <span className='text-xs text-red-600 font-medium ml-1'>
+                <div className='flex items-center gap-1'>
+                  <FileText
+                    className={`w-3 h-3 ${
+                      !canUploadDocument ? 'text-red-500' : 'text-blue-500'
+                    }`}
+                  />
+                  <span className='text-xs font-medium text-gray-700'>
+                    {documentCount}/{maxFreeDocuments}
+                  </span>
+                </div>
+                <div className='flex items-center gap-1'>
+                  <MessageSquare
+                    className={`w-3 h-3 ${
+                      !canChat ? 'text-red-500' : 'text-green-500'
+                    }`}
+                  />
+                  <span className='text-xs font-medium text-gray-700'>
+                    {chatCount}/{maxFreeChats}
+                  </span>
+                </div>
+                {(!canChat || !canUploadDocument) && (
+                  <span className='text-xs text-red-600 font-medium'>
                     Limit reached
                   </span>
                 )}
@@ -232,14 +247,32 @@ Bringing your documents to life with AI...
 
             {/* User Authentication */}
             {user ? (
-              <UserButton
-                appearance={{
-                  elements: {
-                    avatarBox: 'w-8 h-8',
-                    userButtonTrigger: 'focus:shadow-none',
-                  },
-                }}
-              />
+              <div className='flex items-center gap-3'>
+                <div className='flex items-center gap-2'>
+                  <span className='text-sm font-medium text-gray-700 hidden md:inline'>
+                    {user.fullName ||
+                      user.firstName ||
+                      user.emailAddresses[0]?.emailAddress?.split('@')[0]}
+                  </span>
+                </div>
+
+                <UserMenu userId={userId}>
+                  <Avatar>
+                    <AvatarImage src={user.imageUrl} />
+                    <AvatarFallback>SK</AvatarFallback>
+                  </Avatar>
+
+                  {/* <Button className='flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors '>
+                    <Image
+                      width={32}
+                      height={32}
+                      src={user.imageUrl}
+                      alt={user.fullName || 'User'}
+                      className='w-8 h-8 rounded-full border border-gray-200'
+                    />
+                  </Button> */}
+                </UserMenu>
+              </div>
             ) : (
               <div className='flex items-center gap-2'>
                 <Link
@@ -260,7 +293,7 @@ Bringing your documents to life with AI...
 
       {/* Main Content */}
       <main className='flex-1 p-3 md:px-4 md:py-1 md:pb-4 overflow-hidden min-h-0'>
-        <div className='max-w-screen-2xl mx-auto h-full min-h-0'>
+        <div className='w-full h-full min-h-0'>
           <div
             className={`h-full min-h-0 grid gap-4 transition-all duration-700 ease-in-out ${getGridLayoutClasses()}`}>
             <AnimatePresence mode='popLayout'>
@@ -459,16 +492,24 @@ Bringing your documents to life with AI...
   );
 }
 
-export default function AppLayout() {
+interface AppLayoutProps {
+  userId?: string;
+}
+
+export default function AppLayout({ userId }: AppLayoutProps) {
   return (
-    <GuidedTourProvider>
-      <UsageProvider>
-        <DocumentProvider>
-          <NotebookProvider>
-            <AppLayoutContent />
-          </NotebookProvider>
-        </DocumentProvider>
-      </UsageProvider>
-    </GuidedTourProvider>
+    <AuthProvider>
+      <GuidedTourProvider>
+        <SubscriptionProvider>
+          <UsageProvider>
+            <DocumentProvider>
+              <NotebookProvider>
+                <AppLayoutContent userId={userId} />
+              </NotebookProvider>
+            </DocumentProvider>
+          </UsageProvider>
+        </SubscriptionProvider>
+      </GuidedTourProvider>
+    </AuthProvider>
   );
 }
