@@ -1,7 +1,10 @@
-'use client';
-
-import AppLayout from '@/components/AppLayout';
+import { Suspense } from 'react';
+import NotebookLMLanding from '@/components/landing/NotebookLMLanding';
 
 export default function Home() {
-  return <AppLayout />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <NotebookLMLanding />
+    </Suspense>
+  );
 }

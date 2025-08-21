@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { similaritySearch } from '@/lib/qdrant';
-import openai from '@/lib/openai';
+import openai, { OPENAI_MODEL } from '@/lib/openai';
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,9 +55,9 @@ export async function POST(request: NextRequest) {
           prompt = `Extract the most notable and impactful quotes from the following content. Select quotes that are memorable, insightful, or represent key ideas. Format as markdown with context:\n\n${combinedContent}`;
         }
 
-        // Generate insight using the existing OpenAI setup
+        // Generate insight using configured OpenAI model
         const completion = await openai.chat.completions.create({
-          model: 'gpt-4o-mini',
+          model: OPENAI_MODEL,
           messages: [{ role: 'user', content: prompt }],
           max_tokens: 1000,
           temperature: 0.7,
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         : 'Explain the importance of extracting key quotes and memorable statements from documents.';
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: OPENAI_MODEL,
         messages: [{ role: 'user', content: generalPrompt }],
         max_tokens: 1000,
         temperature: 0.7,

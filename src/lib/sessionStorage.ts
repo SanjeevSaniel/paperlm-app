@@ -1,171 +1,113 @@
-import { Document, ChatMessage } from '@/types';
+/**
+ * Simplified session storage using stores instead of localStorage
+ * Provides compatibility with existing components during transition
+ */
+
+import { ChatMessage } from '@/types';
 
 export interface NotebookNote {
   id: string;
   title: string;
   content: string;
-  createdAt: string;
-  updatedAt: string;
+  timestamp: number;
+  userId: string;
 }
 
-export interface SessionData {
-  documents: Document[];
-  chatMessages: ChatMessage[];
-  notebookNotes: NotebookNote[];
-  sessionId: string;
-  isAuthenticated: boolean;
-  userId?: string;
-  userEmail?: string;
-  cloudinaryUrls?: Record<string, string>; // documentId -> cloudinary URL mapping
-  createdAt: string;
-  expiresAt: string;
+/**
+ * Get current session ID - using user ID for simplicity
+ */
+export function getSessionId(): string | null {
+  // This will be set by the chat store or auth store
+  return typeof window !== 'undefined' ? localStorage.getItem('currentSessionId') : null;
 }
 
-const SESSION_STORAGE_KEY = 'paperlm_session_data';
-const SESSION_DURATION = 48 * 60 * 60 * 1000; // 48 hours in milliseconds
-
-export function generateSessionId(): string {
-  return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
-
-function createDefaultSessionData(): SessionData {
-  const now = new Date();
-  return {
-    documents: [],
-    chatMessages: [],
-    notebookNotes: [],
-    sessionId: generateSessionId(),
-    isAuthenticated: false,
-    cloudinaryUrls: {},
-    createdAt: now.toISOString(),
-    expiresAt: new Date(now.getTime() + SESSION_DURATION).toISOString(),
-  };
-}
-
-export function isSessionExpired(sessionData: SessionData): boolean {
-  return new Date(sessionData.expiresAt) < new Date();
-}
-
-export function saveSessionData(data: Partial<SessionData>): void {
-  try {
-    const existingData = getSessionData();
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + SESSION_DURATION);
-
-    const sessionData: SessionData = {
-      documents: data.documents || existingData?.documents || [],
-      chatMessages: data.chatMessages || existingData?.chatMessages || [],
-      notebookNotes: data.notebookNotes || existingData?.notebookNotes || [],
-      sessionId: data.sessionId || existingData?.sessionId || generateSessionId(),
-      isAuthenticated: data.isAuthenticated || existingData?.isAuthenticated || false,
-      userId: data.userId || existingData?.userId,
-      userEmail: data.userEmail || existingData?.userEmail,
-      cloudinaryUrls: data.cloudinaryUrls || existingData?.cloudinaryUrls || {},
-      createdAt: existingData?.createdAt || now.toISOString(),
-      expiresAt: expiresAt.toISOString(),
-    };
-
-    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionData));
-    console.log('Session data saved:', sessionData.sessionId);
-  } catch (error) {
-    console.error('Failed to save session data:', error);
+/**
+ * Get session data - simplified version
+ */
+export function getSessionData(): {
+  messages: ChatMessage[];
+  notes: NotebookNote[];
+} {
+  const sessionId = getSessionId();
+  if (!sessionId) {
+    return { messages: [], notes: [] };
   }
-}
 
-export function getSessionData(): SessionData | null {
   try {
-    const storedData = localStorage.getItem(SESSION_STORAGE_KEY);
-    if (!storedData) return null;
-
-    const sessionData: SessionData = JSON.parse(storedData);
+    const messagesKey = `chat_messages_${sessionId}`;
+    const notesKey = `notebook_notes_${sessionId}`;
     
-    // Check if session has expired
-    if (isSessionExpired(sessionData)) {
-      console.log('Session expired, clearing data');
-      clearSessionData();
-      return null;
-    }
+    const messages = typeof window !== 'undefined' ? 
+      JSON.parse(localStorage.getItem(messagesKey) || '[]') : [];
+    const notes = typeof window !== 'undefined' ? 
+      JSON.parse(localStorage.getItem(notesKey) || '[]') : [];
 
-    return sessionData;
+    return { messages, notes };
   } catch (error) {
-    console.error('Failed to get session data:', error);
-    return null;
+    console.error('Error getting session data:', error);
+    return { messages: [], notes: [] };
   }
 }
 
-export function clearSessionData(): void {
+/**
+ * Update chat messages for current session
+ */
+export function updateSessionChatMessages(messages: ChatMessage[]): void {
+  const sessionId = getSessionId();
+  if (!sessionId || typeof window === 'undefined') return;
+
   try {
-    localStorage.removeItem(SESSION_STORAGE_KEY);
-    console.log('Session data cleared');
+    const messagesKey = `chat_messages_${sessionId}`;
+    localStorage.setItem(messagesKey, JSON.stringify(messages));
   } catch (error) {
-    console.error('Failed to clear session data:', error);
+    console.error('Error updating chat messages:', error);
   }
 }
 
-export function updateSessionDocuments(documents: Document[]): void {
-  let sessionData = getSessionData();
-  if (!sessionData) {
-    sessionData = createDefaultSessionData();
+/**
+ * Update notebook notes for current session
+ */
+export function updateSessionNotebookNotes(notes: NotebookNote[]): void {
+  const sessionId = getSessionId();
+  if (!sessionId || typeof window === 'undefined') return;
+
+  try {
+    const notesKey = `notebook_notes_${sessionId}`;
+    localStorage.setItem(notesKey, JSON.stringify(notes));
+  } catch (error) {
+    console.error('Error updating notebook notes:', error);
   }
-  saveSessionData({ ...sessionData, documents });
 }
 
-export function updateSessionChatMessages(chatMessages: ChatMessage[]): void {
-  let sessionData = getSessionData();
-  if (!sessionData) {
-    sessionData = createDefaultSessionData();
+/**
+ * Set current session ID
+ */
+export function setSessionId(sessionId: string): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('currentSessionId', sessionId);
   }
-  saveSessionData({ ...sessionData, chatMessages });
 }
 
-export function updateSessionNotebookNotes(notebookNotes: NotebookNote[]): void {
-  let sessionData = getSessionData();
-  
-  if (!sessionData) {
-    sessionData = createDefaultSessionData();
+/**
+ * Update session documents - compatibility function
+ */
+export function updateSessionDocuments(documents: any[]): void {
+  const sessionId = getSessionId();
+  if (!sessionId || typeof window === 'undefined') return;
+
+  try {
+    const documentsKey = `session_documents_${sessionId}`;
+    localStorage.setItem(documentsKey, JSON.stringify(documents));
+  } catch (error) {
+    console.error('Error updating session documents:', error);
   }
-  
-  const updatedData = { ...sessionData, notebookNotes };
-  saveSessionData(updatedData);
 }
 
-export function getSessionId(): string {
-  const sessionData = getSessionData();
-  if (sessionData) {
-    return sessionData.sessionId;
-  }
-  
-  // Generate new session if none exists
-  const newSessionId = generateSessionId();
-  saveSessionData({ sessionId: newSessionId });
-  return newSessionId;
-}
-
-// Update user authentication info
-export function updateUserAuth(userId: string, userEmail: string): void {
-  const sessionData = getSessionData();
-  saveSessionData({ 
-    ...sessionData, 
-    isAuthenticated: true, 
-    userId, 
-    userEmail 
-  });
-}
-
-// Update Cloudinary URLs for documents
-export function updateCloudinaryUrl(documentId: string, cloudinaryUrl: string): void {
-  const sessionData = getSessionData();
-  const cloudinaryUrls = sessionData?.cloudinaryUrls || {};
-  cloudinaryUrls[documentId] = cloudinaryUrl;
-  
-  saveSessionData({ 
-    ...sessionData, 
-    cloudinaryUrls 
-  });
-}
-
-// Get Cloudinary URL for a document
-export function getCloudinaryUrl(documentId: string): string | null {
-  const sessionData = getSessionData();
-  return sessionData?.cloudinaryUrls?.[documentId] || null;
+/**
+ * Update user auth - compatibility function (now handled by auth store)
+ */
+export function updateUserAuth(userId: string, email: string): void {
+  // Set session ID to user ID for simplicity
+  setSessionId(userId);
+  console.log('User auth updated:', { userId, email });
 }

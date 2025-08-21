@@ -9,6 +9,8 @@ export default function Page() {
           <p className="text-gray-600">Sign in to continue to PaperLM</p>
         </div>
         <SignIn 
+          redirectUrl="/paper"
+          forceRedirectUrl="/paper"
           appearance={{
             elements: {
               rootBox: "mx-auto",

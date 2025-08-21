@@ -432,6 +432,15 @@ export default function SmartNotebookPanel() {
   useEffect(() => {
     const loadNotesFromSession = () => {
       try {
+        // FIRST: Load previously processed document IDs from session storage
+        // This must happen BEFORE setting isInitialized to prevent duplicate generation
+        let initialProcessedDocs = new Set<string>();
+        const processedDocsFromStorage = sessionStorage.getItem('paperlm_processed_documents');
+        if (processedDocsFromStorage) {
+          const processedIds = JSON.parse(processedDocsFromStorage);
+          initialProcessedDocs = new Set(processedIds);
+        }
+
         const sessionData = getSessionData();
         if (sessionData && sessionData.notebookNotes.length > 0) {
           // Convert session notes to local Note format
@@ -461,18 +470,17 @@ export default function SmartNotebookPanel() {
               .map(note => (note as Note).sourceDocumentId)
               .filter(id => id) as string[]
           );
-          setProcessedDocuments(existingDocIds);
+          
+          // Combine both sources of processed documents
+          const allProcessedDocs = new Set([...initialProcessedDocs, ...existingDocIds]);
+          setProcessedDocuments(allProcessedDocs);
         } else {
-          // Start with empty notes - let auto-generation create them
+          // Start with empty notes but still set processed documents to prevent regeneration
           setNotes([]);
+          setProcessedDocuments(initialProcessedDocs);
         }
         
-        // Also load any previously processed document IDs from session storage
-        const processedDocsFromStorage = sessionStorage.getItem('paperlm_processed_documents');
-        if (processedDocsFromStorage) {
-          const processedIds = JSON.parse(processedDocsFromStorage);
-          setProcessedDocuments(prev => new Set([...prev, ...processedIds]));
-        }
+        console.log('📋 Loaded processed documents on init:', Array.from(initialProcessedDocs));
       } catch (error) {
         console.warn('Failed to load notebook notes from session:', error);
       } finally {
@@ -499,7 +507,7 @@ export default function SmartNotebookPanel() {
 
   // Auto-create notebook cards when documents are uploaded (only for newly processed documents)
   useEffect(() => {
-    console.log('🔍 Auto-generation check:', { hasDocuments, documentCount, isInitialized });
+    console.log('🔍 Auto-generation check:', { hasDocuments, documentCount, isInitialized, processedDocsCount: processedDocuments.size });
     if (hasDocuments && documentCount > 0 && isInitialized) {
       const sessionData = getSessionData();
       const documents: Document[] = sessionData?.documents || [];
@@ -508,6 +516,7 @@ export default function SmartNotebookPanel() {
       console.log('📄 Found documents:', documents.length);
       console.log('📝 Existing notes:', existingNotes.length);
       console.log('🏷️ Previously processed docs:', Array.from(processedDocuments));
+      console.log('🚫 Preventing regeneration for already processed documents');
 
       // Only process documents that are:
       // 1. Ready status

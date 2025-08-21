@@ -1,8 +1,10 @@
 'use client';
 
 import { useDocumentContext } from '@/contexts/DocumentContext';
-import { getSessionData, updateSessionDocuments } from '@/lib/sessionStorage';
+import { useUsage } from '@/contexts/UsageContext';
+import { getSessionData, getSessionId, updateSessionDocuments } from '@/lib/sessionStorage';
 import { Document } from '@/types';
+import { useUser } from '@clerk/nextjs';
 import { FileText, Loader2, Plus } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -16,6 +18,8 @@ interface ExtendedDocument extends Document {
 }
 
 export default function DocumentSourcesPanel() {
+  const { user } = useUser();
+  const { canUploadDocument, incrementDocumentUsage } = useUsage();
   const [documents, setDocuments] = useState<ExtendedDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { setHasDocuments, setDocumentCount } = useDocumentContext();
@@ -56,6 +60,14 @@ export default function DocumentSourcesPanel() {
   }, [documents, setHasDocuments, setDocumentCount]);
 
   const handleFiles = useCallback(async (files: FileList) => {
+    // Check upload limit for free users
+    if (!canUploadDocument) {
+      toast.error('Document upload limit reached. Sign in for unlimited uploads.', {
+        duration: 5000,
+      });
+      return;
+    }
+
     Array.from(files).forEach(async (file) => {
       if (
         file.type === 'text/plain' ||
@@ -93,6 +105,10 @@ export default function DocumentSourcesPanel() {
         try {
           const formData = new FormData();
           formData.append('file', file);
+          formData.append('sessionId', getSessionId());
+          if (user?.primaryEmailAddress?.emailAddress) {
+            formData.append('userEmail', user.primaryEmailAddress.emailAddress);
+          }
 
           setDocuments((prev) =>
             prev.map((doc) =>
@@ -132,6 +148,9 @@ export default function DocumentSourcesPanel() {
               ),
             );
 
+            // Increment usage
+            await incrementDocumentUsage();
+            
             toast.dismiss(loadingToast);
             toast.success(`${file.name} uploaded successfully!`, {
               duration: 3000,
@@ -173,6 +192,14 @@ export default function DocumentSourcesPanel() {
   const handleTextSubmit = useCallback(async (text: string) => {
     if (!text.trim()) return;
 
+    // Check upload limit for free users
+    if (!canUploadDocument) {
+      toast.error('Document upload limit reached. Sign in for unlimited uploads.', {
+        duration: 5000,
+      });
+      return;
+    }
+
     const tempId = `temp_text_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
@@ -199,6 +226,10 @@ export default function DocumentSourcesPanel() {
 
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('sessionId', getSessionId());
+      if (user?.primaryEmailAddress?.emailAddress) {
+        formData.append('userEmail', user.primaryEmailAddress.emailAddress);
+      }
 
       const response = await fetch('/api/upload', {
         method: 'POST',
@@ -223,6 +254,9 @@ export default function DocumentSourcesPanel() {
           ),
         );
 
+        // Increment usage 
+        await incrementDocumentUsage();
+        
         toast.dismiss(loadingToast);
         toast.success('Text input processed and indexed successfully!', {
           duration: 3000,
@@ -290,7 +324,7 @@ export default function DocumentSourcesPanel() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ url, type }),
+          body: JSON.stringify({ url, type, sessionId: getSessionId() }),
           signal: controller.signal,
         });
 

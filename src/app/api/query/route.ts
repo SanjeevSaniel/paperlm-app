@@ -1,18 +1,21 @@
 export const runtime = 'nodejs';
 
-import { generateChatCompletion } from '@/lib/openai';
-import openai from '@/lib/openai';
+import openai, { generateChatCompletion, OPENAI_MODEL } from '@/lib/openai';
 import type { RAGResult } from '@/lib/qdrant';
 import { similaritySearch } from '@/lib/qdrant';
+import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Generate query variations to improve context retrieval
-async function generateQueryVariations(originalQuery: string, chatHistory: Array<{content: string}> = []): Promise<string[]> {
+async function generateQueryVariations(
+  originalQuery: string,
+  chatHistory: Array<{ content: string }> = [],
+): Promise<string[]> {
   try {
     // Extract context from recent chat history
     const recentContext = chatHistory
       .slice(-3)
-      .map(msg => msg.content)
+      .map((msg) => msg.content)
       .join(' ')
       .substring(0, 300);
 
@@ -26,19 +29,22 @@ Generate 2-3 alternative search queries that capture different semantic angles o
 Return only the alternative queries, one per line, without numbering or explanation.`;
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: OPENAI_MODEL,
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 150,
       temperature: 0.7,
     });
 
-    const variations = response.choices[0]?.message?.content
-      ?.split('\n')
-      .filter(line => line.trim().length > 0)
-      .map(line => line.trim())
-      .slice(0, 3) || [];
+    const variations =
+      response.choices[0]?.message?.content
+        ?.split('\n')
+        .filter((line) => line.trim().length > 0)
+        .map((line) => line.trim())
+        .slice(0, 3) || [];
 
-    console.log(`🔍 Generated ${variations.length} query variations for: "${originalQuery}"`);
+    console.log(
+      `🔍 Generated ${variations.length} query variations for: "${originalQuery}"`,
+    );
     return variations;
   } catch (error) {
     console.warn('⚠️ Query variation generation failed:', error);
@@ -49,26 +55,30 @@ Return only the alternative queries, one per line, without numbering or explanat
 // Function to select adjacent chunks for better context continuity
 function selectAdjacentChunks(chunks: RAGResult[]): RAGResult[] {
   if (chunks.length <= 3) return chunks;
-  
+
   // Find the best starting chunk (usually the first or most relevant)
   const startChunk = chunks[0];
   const selected = [startChunk];
-  
+
   // Try to add adjacent chunks
   const currentIndex = startChunk.metadata.chunkIndex;
-  
+
   // Add next chunk if available
-  const nextChunk = chunks.find(c => c.metadata.chunkIndex === currentIndex + 1);
+  const nextChunk = chunks.find(
+    (c) => c.metadata.chunkIndex === currentIndex + 1,
+  );
   if (nextChunk) selected.push(nextChunk);
-  
+
   // Add previous chunk if available
-  const prevChunk = chunks.find(c => c.metadata.chunkIndex === currentIndex - 1);
+  const prevChunk = chunks.find(
+    (c) => c.metadata.chunkIndex === currentIndex - 1,
+  );
   if (prevChunk) selected.unshift(prevChunk);
-  
+
   // Add any remaining high-relevance chunks (first few from the sorted list)
-  const remaining = chunks.filter(c => !selected.includes(c)).slice(0, 2);
+  const remaining = chunks.filter((c) => !selected.includes(c)).slice(0, 2);
   selected.push(...remaining);
-  
+
   return selected.slice(0, 5); // Limit to 5 chunks per document
 }
 
@@ -87,6 +97,56 @@ function selectAdjacentChunks(chunks: RAGResult[]): RAGResult[] {
 //     documentIds?: string[];
 //   };
 // }
+
+// Response formatting enhancement function
+function enhanceResponseFormatting(response: string): string {
+  if (!response || typeof response !== 'string') {
+    return response;
+  }
+
+  let formattedResponse = response;
+
+  // Ensure proper line breaks between sections
+  formattedResponse = formattedResponse.replace(/\n{3,}/g, '\n\n');
+
+  // Fix bullet points - convert various forms to consistent bullet points
+  formattedResponse = formattedResponse.replace(/^[\s]*[-*]\s+/gm, '• ');
+  formattedResponse = formattedResponse.replace(/^[\s]*\d+\.\s+/gm, (match) => {
+    // Keep numbered lists as is, but ensure proper formatting
+    return match.trim() + ' ';
+  });
+
+  // Enhance emphasis formatting
+  formattedResponse = formattedResponse.replace(/\*\*([^*]+)\*\*/g, '**$1**');
+  formattedResponse = formattedResponse.replace(/\*([^*]+)\*/g, '*$1*');
+
+  // Ensure proper blockquote formatting
+  formattedResponse = formattedResponse.replace(/^[\s]*>[\s]*(.+)$/gm, '> $1');
+
+  // Add spacing around headings for better readability
+  formattedResponse = formattedResponse.replace(/^(#+\s+.+)$/gm, '\n$1\n');
+
+  // Remove extra spaces while preserving intentional formatting
+  formattedResponse = formattedResponse.replace(/[ \t]+$/gm, ''); // Remove trailing spaces
+  formattedResponse = formattedResponse.replace(/^[ \t]+/gm, ''); // Remove leading spaces (except for code blocks)
+
+  // Ensure the response ends cleanly
+  formattedResponse = formattedResponse.trim();
+
+  // Add professional closing if the response is substantial
+  if (
+    formattedResponse.length > 200 &&
+    !formattedResponse.match(/\n\n---|\*\*Summary\*\*|\*\*Conclusion\*\*/i)
+  ) {
+    // Don't add conclusion if it already has one
+    if (!formattedResponse.match(/(conclusion|summary|takeaway)/i)) {
+      formattedResponse +=
+        '\n\n---\n*Analysis based on the provided document context.*';
+    }
+  }
+
+  return formattedResponse;
+}
 
 // interface Citation {
 //   id: string;
@@ -184,7 +244,13 @@ function selectAdjacentChunks(chunks: RAGResult[]): RAGResult[] {
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, chatHistory = [] } = await request.json();
+    const { userId } = await auth();
+    const {
+      message,
+      chatHistory = [],
+      sessionId,
+      userEmail,
+    } = await request.json();
 
     if (!message || typeof message !== 'string' || !message.trim()) {
       return NextResponse.json(
@@ -193,28 +259,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Determine the storage identifier: email for authenticated users, sessionId for free users
+    const storageId = userId && userEmail ? userEmail : sessionId;
+
+    if (!storageId || typeof storageId !== 'string') {
+      return NextResponse.json(
+        { error: 'No user email or session ID provided' },
+        { status: 400 },
+      );
+    }
+
     // console.log(`🔍 Searching for: "${message}"`);
 
-    // Enhanced multi-query search for better context retrieval
-    const primaryResults = await similaritySearch(message, 20);
-    
+    // Enhanced multi-query search for better context retrieval with storage isolation
+    const primaryResults = await similaritySearch(message, 20, storageId);
+
     // Generate query variations to capture different semantic angles
     const queryVariations = await generateQueryVariations(message, chatHistory);
     const enhancedResults = await Promise.all(
-      queryVariations.map(variation => similaritySearch(variation, 10))
+      queryVariations.map((variation) =>
+        similaritySearch(variation, 10, storageId),
+      ),
     );
-    
+
     // Combine and deduplicate results
-    const allResults = [
-      ...primaryResults,
-      ...enhancedResults.flat()
-    ];
-    
+    const allResults = [...primaryResults, ...enhancedResults.flat()];
+
     // Remove duplicates based on chunkId and sort by relevance
     const uniqueResults = Array.from(
-      new Map(allResults.map(result => [result.metadata.chunkId, result])).values()
+      new Map(
+        allResults.map((result) => [result.metadata.chunkId, result]),
+      ).values(),
     );
-    
+
     // Filter results by minimum similarity threshold (if using Qdrant scores)
     const results = uniqueResults.slice(0, 25); // Increased from 15 to 25
 
@@ -233,66 +310,76 @@ export async function POST(request: NextRequest) {
     const contextChunks: string[] = [];
     let totalChars = 0;
     const maxChars = 12000; // Doubled context window for better coverage
-    
+
     // Group results by document for better context coherence
     const documentGroups = new Map<string, RAGResult[]>();
-    results.forEach(result => {
+    results.forEach((result) => {
       const docId = result.metadata.documentId;
       if (!documentGroups.has(docId)) {
         documentGroups.set(docId, []);
       }
       documentGroups.get(docId)!.push(result);
     });
-    
+
     // Sort document groups by relevance (based on first result's position)
-    const sortedDocGroups = Array.from(documentGroups.entries())
-      .sort(([, a], [, b]) => {
-        const aIndex = results.findIndex(r => r.metadata.documentId === a[0].metadata.documentId);
-        const bIndex = results.findIndex(r => r.metadata.documentId === b[0].metadata.documentId);
+    const sortedDocGroups = Array.from(documentGroups.entries()).sort(
+      ([, a], [, b]) => {
+        const aIndex = results.findIndex(
+          (r) => r.metadata.documentId === a[0].metadata.documentId,
+        );
+        const bIndex = results.findIndex(
+          (r) => r.metadata.documentId === b[0].metadata.documentId,
+        );
         return aIndex - bIndex;
-      });
+      },
+    );
 
     // Priority 1: Text input chunks (highest priority)
-    const textInputResults = results.filter(r => r.metadata.fileName === 'text-input.txt');
+    const textInputResults = results.filter(
+      (r) => r.metadata.fileName === 'text-input.txt',
+    );
     for (const result of textInputResults) {
       if (totalChars >= maxChars) break;
       const content = (result.pageContent || '').trim();
       if (!content) continue;
-      
+
       const source = '[TEXT INPUT]';
       const contextPiece = `${source} ${content}`;
-      
+
       if (totalChars + contextPiece.length + 50 <= maxChars) {
         contextChunks.push(contextPiece);
         totalChars += contextPiece.length + 50;
       }
     }
-    
+
     // Priority 2: Process document groups with adjacent chunks for better context
     for (const [, docResults] of sortedDocGroups) {
       if (totalChars >= maxChars) break;
-      
+
       // Skip text input as already processed
       if (docResults[0]?.metadata.fileName === 'text-input.txt') continue;
-      
+
       // Sort chunks by position within document
-      const sortedChunks = docResults.sort((a, b) => a.metadata.chunkIndex - b.metadata.chunkIndex);
-      
+      const sortedChunks = docResults.sort(
+        (a, b) => a.metadata.chunkIndex - b.metadata.chunkIndex,
+      );
+
       // Try to include adjacent chunks for better context continuity
       const selectedChunks = selectAdjacentChunks(sortedChunks);
-      
+
       for (const result of selectedChunks) {
         if (totalChars >= maxChars) break;
-        
+
         const content = (result.pageContent || '').trim();
         if (!content) continue;
-        
+
         // Use longer chunks (1200 instead of 800) for better context
-        const chunk = content.length > 1200 ? content.slice(0, 1200) + '...' : content;
+        const chunk =
+          content.length > 1200 ? content.slice(0, 1200) + '...' : content;
         const source = `[${result.metadata.fileName}]`;
         const chunkInfo = `[Chunk ${result.metadata.chunkIndex + 1}]`;
         const contextPiece = `${source} ${chunkInfo} ${chunk}`;
-        
+
         if (totalChars + contextPiece.length + 50 <= maxChars) {
           contextChunks.push(contextPiece);
           totalChars += contextPiece.length + 50;
@@ -300,14 +387,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-
     const context = contextChunks.join('\n\n');
     // console.log(
     //   `📝 Built context with ${context.length} characters from ${contextChunks.length} chunks`,
     // );
 
-    // Enhanced system prompt for better context utilization
-    const systemPrompt = `You are an expert AI research assistant that analyzes and synthesizes information from provided documents.
+    // Enhanced system prompt for professional, well-formatted responses
+    const systemPrompt = `You are an expert AI research assistant that analyzes and synthesizes information from provided documents. Your responses should be professional, well-structured, and visually appealing.
 
 CRITICAL INSTRUCTIONS:
 - ONLY use information from the Context sections below - no external knowledge
@@ -317,16 +403,36 @@ CRITICAL INSTRUCTIONS:
 - Prioritize [TEXT INPUT] sources as they contain direct user-provided information
 - When citing sources, reference the document name and chunk number for precision
 
-RESPONSE GUIDELINES:
-- If Context contains relevant information: Provide a thorough, well-structured answer
+RESPONSE FORMATTING REQUIREMENTS:
+Your responses must be professionally formatted using markdown with the following structure:
+
+1. **Executive Summary** (if appropriate): Brief overview in 1-2 sentences
+2. **Main Content**: Well-organized with clear headings and subheadings
+3. **Key Points**: Use bullet points (•) or numbered lists for clarity
+4. **Important Information**: Use **bold** for emphasis and *italics* for context
+5. **Quotes**: Use > blockquotes for direct citations
+6. **Conclusions**: Clear takeaways when applicable
+
+FORMATTING GUIDELINES:
+- Use ## for main headings and ### for subheadings
+- Use bullet points (•) instead of dashes (-)
+- Bold key terms and important concepts
+- Use blockquotes (>) for direct citations from documents
+- Add line breaks between sections for readability
+- Use numbered lists for sequential information
+- Italicize document names and sources
+
+RESPONSE QUALITY STANDARDS:
+- Professional tone and language
+- Clear, concise, and well-structured
+- Visually appealing with proper spacing
 - Cross-reference information between different document chunks when applicable
-- Quote specific passages when they directly answer the question
-- If Context lacks sufficient information: State "The provided documents do not contain enough information to fully answer this question. Based on the available context, I can only provide: [partial information if any]"
+- If Context lacks sufficient information: State clearly and provide any available partial information
 
 CONTEXT SECTIONS:
 ${context}
 
-Remember: Your expertise comes from analyzing and connecting the information in the Context above. Build comprehensive answers by synthesizing related information across all provided chunks.`;
+Remember: Your expertise comes from analyzing and connecting the information in the Context above. Present your findings in a professional, well-formatted manner that is easy to read and understand.`;
 
     // Build message array for chat completion
     const messages = [
@@ -335,43 +441,49 @@ Remember: Your expertise comes from analyzing and connecting the information in 
     ];
 
     // console.log(`🤖 Sending to AI with ${context.length} chars of context`);
-    const response = await generateChatCompletion(messages, systemPrompt);
+    const rawResponse = await generateChatCompletion(messages, systemPrompt);
 
-    // Create citations with deduplication based on chunkId
-    const uniqueCitations = new Map();
-    
-    results.slice(0, 8).forEach((doc, index) => {
-      const chunkId = doc.metadata.chunkId;
-      
-      // Skip if we already have a citation for this chunk
-      if (uniqueCitations.has(chunkId)) {
-        return;
-      }
-      
+    // Post-process response for enhanced formatting
+    const response = enhanceResponseFormatting(
+      rawResponse ||
+        "I apologize, but I couldn't generate a proper response. Please try again.",
+    );
+
+    // Create single most relevant citation
+    const citations = [];
+
+    if (results.length > 0) {
+      // Get the most relevant result (first in sorted array)
+      const topResult = results[0];
+
       const citation = {
-        id: `citation-${chunkId}`, // Use chunkId for consistent ID
-        documentId: doc.metadata.documentId,
-        documentName: doc.metadata.fileName || 'Unknown Document',
-        documentType: doc.metadata.fileType || 'text/plain',
-        sourceUrl: doc.metadata.sourceUrl,
-        chunkId: doc.metadata.chunkId,
-        chunkIndex: doc.metadata.chunkIndex || 0,
+        id: `citation-${topResult.metadata.chunkId}`,
+        documentId: topResult.metadata.documentId,
+        documentName: topResult.metadata.fileName || 'Unknown Document',
+        documentType: topResult.metadata.fileType || 'text/plain',
+        sourceUrl: topResult.metadata.sourceUrl,
+        chunkId: topResult.metadata.chunkId,
+        chunkIndex: topResult.metadata.chunkIndex || 0,
         content:
-          doc.pageContent.length > 200
-            ? doc.pageContent.slice(0, 200) + '...'
-            : doc.pageContent,
-        fullContent: doc.pageContent, // Store full content for citation details
-        relevanceScore: Math.max(0.1, 0.95 - index * 0.1),
-        uploadedAt: doc.metadata.uploadedAt || new Date().toISOString(),
-        isTextInput: doc.metadata.fileName === 'text-input.txt',
-        author: ('author' in doc.metadata) ? doc.metadata.author as string : undefined,
-        publishedAt: ('publishedAt' in doc.metadata) ? doc.metadata.publishedAt as string : undefined,
+          topResult.pageContent.length > 200
+            ? topResult.pageContent.slice(0, 200) + '...'
+            : topResult.pageContent,
+        fullContent: topResult.pageContent,
+        relevanceScore: 0.95, // Always high for the single most relevant result
+        uploadedAt: topResult.metadata.uploadedAt || new Date().toISOString(),
+        isTextInput: topResult.metadata.fileName === 'text-input.txt',
+        author:
+          'author' in topResult.metadata
+            ? (topResult.metadata.author as string)
+            : undefined,
+        publishedAt:
+          'publishedAt' in topResult.metadata
+            ? (topResult.metadata.publishedAt as string)
+            : undefined,
       };
-      
-      uniqueCitations.set(chunkId, citation);
-    });
-    
-    const citations = Array.from(uniqueCitations.values());
+
+      citations.push(citation);
+    }
 
     // console.log(`✅ Generated response with ${citations.length} citations`);
 
