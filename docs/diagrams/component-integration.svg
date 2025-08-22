@@ -1,0 +1,247 @@
+<svg width="1000" height="800" viewBox="0 0 1000 800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font: bold 22px Arial; text-anchor: middle; }
+      .section-title { font: bold 16px Arial; text-anchor: middle; }
+      .component-title { font: bold 12px Arial; text-anchor: middle; }
+      .component-subtitle { font: 10px Arial; text-anchor: middle; }
+      .hook { fill: #8B5CF6; stroke: #6D28D9; stroke-width: 2; rx: 10; }
+      .component { fill: #3B82F6; stroke: #1E40AF; stroke-width: 2; rx: 8; }
+      .api { fill: #10B981; stroke: #047857; stroke-width: 2; rx: 8; }
+      .ui { fill: #F59E0B; stroke: #D97706; stroke-width: 2; rx: 8; }
+      .data-flow { stroke: #374151; stroke-width: 2; marker-end: url(#arrowhead); }
+      .state-flow { stroke: #8B5CF6; stroke-width: 2; marker-end: url(#statehead); stroke-dasharray: 5,5; }
+      .event-flow { stroke: #EF4444; stroke-width: 2; marker-end: url(#eventhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#374151" />
+    </marker>
+    <marker id="statehead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#8B5CF6" />
+    </marker>
+    <marker id="eventhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#EF4444" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="500" y="30" class="title" fill="#1F2937">Vercel AI SDK Component Integration</text>
+  
+  <!-- Main Chat Panel Container -->
+  <rect x="50" y="70" width="900" height="700" fill="#F9FAFB" stroke="#D1D5DB" stroke-width="2" rx="12"/>
+  <text x="500" y="95" class="section-title" fill="#374151">AIChatPanel.tsx - Main Orchestrator</text>
+  
+  <!-- State Management Section -->
+  <rect x="70" y="120" width="280" height="200" fill="#F5F3FF" stroke="#E9D5FF" stroke-width="1" rx="8"/>
+  <text x="210" y="140" class="section-title" fill="#6D28D9">State Management</text>
+  
+  <!-- useState Hooks -->
+  <rect x="90" y="155" width="120" height="40" class="hook"/>
+  <text x="150" y="170" class="component-title" fill="white">Chat State</text>
+  <text x="150" y="183" class="component-subtitle" fill="#E9D5FF">messages, loading</text>
+  
+  <rect x="220" y="155" width="120" height="40" class="hook"/>
+  <text x="280" y="170" class="component-title" fill="white">Stream State</text>
+  <text x="280" y="183" class="component-subtitle" fill="#E9D5FF">streaming, citations</text>
+  
+  <!-- useStreamingChat Hook -->
+  <rect x="90" y="210" width="250" height="50" class="hook"/>
+  <text x="215" y="230" class="component-title" fill="white">useStreamingChat Hook</text>
+  <text x="215" y="243" class="component-subtitle" fill="#E9D5FF">isStreaming, streamingContent, startStream, abortStream</text>
+  
+  <!-- Other Hooks -->
+  <rect x="90" y="270" width="120" height="35" class="hook"/>
+  <text x="150" y="285" class="component-title" fill="white">useUser</text>
+  <text x="150" y="296" class="component-subtitle" fill="#E9D5FF">Clerk auth</text>
+  
+  <rect x="220" y="270" width="120" height="35" class="hook"/>
+  <text x="280" y="285" class="component-title" fill="white">useUsage</text>
+  <text x="280" y="296" class="component-subtitle" fill="#E9D5DB">Chat limits</text>
+  
+  <!-- UI Components Section -->
+  <rect x="370" y="120" width="280" height="200" fill="#FEF7FF" stroke="#F3E8FF" stroke-width="1" rx="8"/>
+  <text x="510" y="140" class="section-title" fill="#7C3AED">UI Components</text>
+  
+  <!-- Chat Header -->
+  <rect x="390" y="155" width="120" height="35" class="ui"/>
+  <text x="450" y="170" class="component-title" fill="white">ChatHeader</text>
+  <text x="450" y="181" class="component-subtitle" fill="#FEF3C7">Controls & status</text>
+  
+  <!-- Message List -->
+  <rect x="520" y="155" width="120" height="35" class="ui"/>
+  <text x="580" y="170" class="component-title" fill="white">Message List</text>
+  <text x="580" y="181" class="component-subtitle" fill="#FEF3C7">Chat history</text>
+  
+  <!-- Streaming Message -->
+  <rect x="390" y="200" width="120" height="45" class="ui"/>
+  <text x="450" y="218" class="component-title" fill="white">StreamingMessage</text>
+  <text x="450" y="229" class="component-subtitle" fill="#FEF3C7">Real-time display</text>
+  <text x="450" y="240" class="component-subtitle" fill="#FEF3C7">typing indicator</text>
+  
+  <!-- Chat Input -->
+  <rect x="520" y="200" width="120" height="45" class="ui"/>
+  <text x="580" y="218" class="component-title" fill="white">ChatInput</text>
+  <text x="580" y="229" class="component-subtitle" fill="#FEF3C7">Stream controls</text>
+  <text x="580" y="240" class="component-subtitle" fill="#FEF3C7">toggle, abort</text>
+  
+  <!-- Loading Indicator -->
+  <rect x="455" y="255" width="120" height="35" class="ui"/>
+  <text x="515" y="270" class="component-title" fill="white">LoadingIndicator</text>
+  <text x="515" y="281" class="component-subtitle" fill="#FEF3C7">Context-aware</text>
+  
+  <!-- API Integration Section -->
+  <rect x="670" y="120" width="260" height="200" fill="#ECFDF5" stroke="#D1FAE5" stroke-width="1" rx="8"/>
+  <text x="800" y="140" class="section-title" fill="#047857">API Integration</text>
+  
+  <!-- Stream API -->
+  <rect x="690" y="155" width="110" height="40" class="api"/>
+  <text x="745" y="170" class="component-title" fill="white">/query/stream</text>
+  <text x="745" y="183" class="component-subtitle" fill="#D1FAE5">Real-time RAG</text>
+  
+  <!-- Regular API -->
+  <rect x="810" y="155" width="110" height="40" class="api"/>
+  <text x="865" y="170" class="component-title" fill="white">/query</text>
+  <text x="865" y="183" class="component-subtitle" fill="#D1FAE5">Fallback mode</text>
+  
+  <!-- Chat API -->
+  <rect x="690" y="205" width="110" height="40" class="api"/>
+  <text x="745" y="220" class="component-title" fill="white">/chat/stream</text>
+  <text x="745" y="233" class="component-subtitle" fill="#D1FAE5">Conversation</text>
+  
+  <!-- Database -->
+  <rect x="810" y="205" width="110" height="40" class="api"/>
+  <text x="865" y="220" class="component-title" fill="white">NeonDB</text>
+  <text x="865" y="233" class="component-subtitle" fill="#D1FAE5">Persistence</text>
+  
+  <!-- Flow Diagram -->
+  <rect x="70" y="350" width="860" height="400" fill="#FAFAFA" stroke="#E5E7EB" stroke-width="1" rx="8"/>
+  <text x="500" y="375" class="section-title" fill="#374151">Data Flow & Event Handling</text>
+  
+  <!-- User Interaction Flow -->
+  <text x="100" y="405" class="component-title" fill="#1F2937">1. User Input Flow</text>
+  
+  <!-- Input Component -->
+  <rect x="90" y="420" width="100" height="30" class="component"/>
+  <text x="140" y="440" class="component-title" fill="white">User Types</text>
+  
+  <!-- Chat Input -->
+  <rect x="210" y="420" width="100" height="30" class="component"/>
+  <text x="260" y="440" class="component-title" fill="white">ChatInput</text>
+  
+  <!-- Submit Handler -->
+  <rect x="330" y="420" width="100" height="30" class="component"/>
+  <text x="380" y="440" class="component-title" fill="white">handleSubmit</text>
+  
+  <!-- Stream Hook -->
+  <rect x="450" y="420" width="100" height="30" class="component"/>
+  <text x="500" y="440" class="component-title" fill="white">startStream</text>
+  
+  <!-- API Call -->
+  <rect x="570" y="420" width="100" height="30" class="component"/>
+  <text x="620" y="440" class="component-title" fill="white">API Request</text>
+  
+  <!-- Arrows for User Input Flow -->
+  <line x1="190" y1="435" x2="210" y2="435" class="data-flow"/>
+  <line x1="310" y1="435" x2="330" y2="435" class="data-flow"/>
+  <line x1="430" y1="435" x2="450" y2="435" class="data-flow"/>
+  <line x1="550" y1="435" x2="570" y2="435" class="data-flow"/>
+  
+  <!-- Streaming Response Flow -->
+  <text x="100" y="485" class="component-title" fill="#1F2937">2. Streaming Response Flow</text>
+  
+  <!-- API Response -->
+  <rect x="90" y="500" width="100" height="30" class="api"/>
+  <text x="140" y="520" class="component-title" fill="white">Stream Start</text>
+  
+  <!-- Hook Processing -->
+  <rect x="210" y="500" width="100" height="30" class="hook"/>
+  <text x="260" y="520" class="component-title" fill="white">Process Chunks</text>
+  
+  <!-- State Update -->
+  <rect x="330" y="500" width="100" height="30" class="hook"/>
+  <text x="380" y="520" class="component-title" fill="white">State Update</text>
+  
+  <!-- UI Render -->
+  <rect x="450" y="500" width="100" height="30" class="ui"/>
+  <text x="500" y="520" class="component-title" fill="white">Re-render UI</text>
+  
+  <!-- User Sees -->
+  <rect x="570" y="500" width="100" height="30" class="component"/>
+  <text x="620" y="520" class="component-title" fill="white">User Sees</text>
+  
+  <!-- Streaming Flow Arrows -->
+  <line x1="190" y1="515" x2="210" y2="515" class="event-flow"/>
+  <line x1="310" y1="515" x2="330" y2="515" class="state-flow"/>
+  <line x1="430" y1="515" x2="450" y2="515" class="state-flow"/>
+  <line x1="550" y1="515" x2="570" y2="515" class="data-flow"/>
+  
+  <!-- Control Flow -->
+  <text x="100" y="565" class="component-title" fill="#1F2937">3. Control Flow</text>
+  
+  <!-- Toggle Stream -->
+  <rect x="90" y="580" width="100" height="30" class="ui"/>
+  <text x="140" y="600" class="component-title" fill="white">Toggle Stream</text>
+  
+  <!-- State Change -->
+  <rect x="210" y="580" width="100" height="30" class="hook"/>
+  <text x="260" y="600" class="component-title" fill="white">Update Mode</text>
+  
+  <!-- Abort Stream -->
+  <rect x="330" y="580" width="100" height="30" class="ui"/>
+  <text x="380" y="600" class="component-title" fill="white">Abort Stream</text>
+  
+  <!-- Cleanup -->
+  <rect x="450" y="580" width="100" height="30" class="hook"/>
+  <text x="500" y="600" class="component-title" fill="white">Cleanup</text>
+  
+  <!-- Control Flow Arrows -->
+  <line x1="190" y1="595" x2="210" y2="595" class="state-flow"/>
+  <line x1="430" y1="595" x2="450" y2="595" class="event-flow"/>
+  
+  <!-- Error Handling -->
+  <text x="100" y="645" class="component-title" fill="#1F2937">4. Error Handling</text>
+  
+  <!-- Error Occurs -->
+  <rect x="90" y="660" width="100" height="30" fill="#FEE2E2" stroke="#FECACA"/>
+  <text x="140" y="680" class="component-title" fill="#DC2626">Error Occurs</text>
+  
+  <!-- Hook Catches -->
+  <rect x="210" y="660" width="100" height="30" class="hook"/>
+  <text x="260" y="680" class="component-title" fill="white">Hook Catches</text>
+  
+  <!-- Fallback -->
+  <rect x="330" y="660" width="100" height="30" class="api"/>
+  <text x="380" y="680" class="component-title" fill="white">Fallback API</text>
+  
+  <!-- User Notified -->
+  <rect x="450" y="660" width="100" height="30" class="ui"/>
+  <text x="500" y="680" class="component-title" fill="white">User Notified</text>
+  
+  <!-- Error Flow Arrows -->
+  <line x1="190" y1="675" x2="210" y2="675" class="event-flow"/>
+  <line x1="310" y1="675" x2="330" y2="675" class="data-flow"/>
+  <line x1="430" y1="675" x2="450" y2="675" class="data-flow"/>
+  
+  <!-- Legend -->
+  <rect x="750" y="580" width="170" height="140" fill="white" stroke="#D1D5DB" stroke-width="1" rx="4"/>
+  <text x="835" y="600" class="component-title" fill="#374151">Legend</text>
+  
+  <!-- Legend Items -->
+  <line x1="760" y1="615" x2="780" y2="615" class="data-flow"/>
+  <text x="785" y="620" class="component-subtitle" fill="#374151">Data flow</text>
+  
+  <line x1="760" y1="635" x2="780" y2="635" class="state-flow"/>
+  <text x="785" y="640" class="component-subtitle" fill="#374151">State update</text>
+  
+  <line x1="760" y1="655" x2="780" y2="655" class="event-flow"/>
+  <text x="785" y="660" class="component-subtitle" fill="#374171">Event trigger</text>
+  
+  <rect x="760" y="670" width="20" height="15" class="hook"/>
+  <text x="785" y="680" class="component-subtitle" fill="#374151">Hook/State</text>
+  
+  <rect x="760" y="690" width="20" height="15" class="ui"/>
+  <text x="785" y="700" class="component-subtitle" fill="#374151">UI Component</text>
+  
+  <rect x="760" y="705" width="20" height="15" class="api"/>
+  <text x="785" y="715" class="component-subtitle" fill="#374151">API/Backend</text>
+</svg>
