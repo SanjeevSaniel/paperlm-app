@@ -28,9 +28,12 @@ A sophisticated Retrieval Augmented Generation (RAG) application that transforms
 
 ### 🤖 Intelligent AI Chat System
 
+- **Real-Time Streaming**: Powered by Vercel AI SDK for instant response streaming with typing indicators
 - **Context-Aware Conversations**: Ask questions about your documents with full context understanding
+- **Stream Controls**: Toggle streaming mode, abort responses mid-stream, and control chat experience
 - **Dynamic Loading States**: Beautiful, animated loading messages that adapt to your query type
 - **Smart Citations**: Responses include source citations with relevance scores and quick access to original content
+- **Dual-Mode Support**: Seamless fallback between streaming and non-streaming modes for reliability
 - **Usage Management**: Built-in rate limiting with 10 free queries per session for unauthenticated users
 - **Citation-to-Notebook**: One-click addition of citations to your notebook for future reference
 
@@ -82,7 +85,9 @@ A sophisticated Retrieval Augmented Generation (RAG) application that transforms
 
 ### AI & Machine Learning
 
+- **AI Framework**: Vercel AI SDK for streaming and standardized AI provider patterns
 - **Large Language Model**: OpenAI GPT-4 for intelligent document analysis
+- **Real-Time Streaming**: Built-in streaming support with typing indicators and user controls
 - **Embeddings**: OpenAI text-embedding models for semantic understanding
 - **Document Processing**: LangChain for intelligent text chunking and processing
 - **RAG Pipeline**: Custom implementation with advanced vector similarity search
@@ -95,6 +100,33 @@ A sophisticated Retrieval Augmented Generation (RAG) application that transforms
 - **Environment**: Environment-based configuration management
 - **Code Quality**: ESLint and TypeScript for code consistency
 - **Version Control**: Git with structured branching strategy
+
+## 🌊 Vercel AI SDK Integration
+
+PaperLM now features advanced streaming capabilities powered by the Vercel AI SDK, providing users with real-time AI responses and an enhanced interactive experience.
+
+### ✨ Streaming Features
+
+- **⚡ Real-Time Responses**: Instant streaming of AI responses with live typing indicators
+- **🎮 User Controls**: Toggle streaming mode on/off, abort responses mid-stream
+- **🔄 Fallback Support**: Automatic fallback to non-streaming mode for reliability
+- **📊 Enhanced Citations**: Real-time citation extraction and display during streaming
+- **🎯 Performance Optimized**: Reduced latency and improved user experience
+
+### 🏗️ Architecture
+
+- **Streaming APIs**: `/api/query/stream` and `/api/chat/stream` endpoints
+- **Custom Hooks**: `useStreamingChat` for state management and stream control
+- **React Components**: `StreamingMessage` for real-time UI updates
+- **Error Boundaries**: Comprehensive error handling with graceful degradation
+
+### 📚 Documentation
+
+For detailed implementation information, see [VERCEL_AI_SDK_INTEGRATION.md](./VERCEL_AI_SDK_INTEGRATION.md) which includes:
+- Complete architecture diagrams with custom SVG visualizations
+- API endpoint documentation with request/response examples
+- Component integration guides and usage patterns
+- Troubleshooting guide and performance optimization tips
 
 ## 🚀 Installation & Setup
 
