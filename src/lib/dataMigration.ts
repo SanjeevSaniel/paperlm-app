@@ -14,8 +14,11 @@ export interface MigrationResult {
 }
 
 export interface LocalStorageData {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   documents: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   notes: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   messages: any[];
   sessionId: string;
 }
@@ -80,6 +83,7 @@ export function hasLocalStorageData(): boolean {
 /**
  * Migrate documents to NeonDB
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function migrateDocuments(documents: any[], sessionId: string): Promise<{ success: number; errors: string[] }> {
   const errors: string[] = [];
   let success = 0;
@@ -124,6 +128,7 @@ async function migrateDocuments(documents: any[], sessionId: string): Promise<{ 
 /**
  * Migrate notes to NeonDB
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function migrateNotes(notes: any[], sessionId: string): Promise<{ success: number; errors: string[] }> {
   const errors: string[] = [];
   let success = 0;
@@ -174,11 +179,13 @@ async function migrateNotes(notes: any[], sessionId: string): Promise<{ success:
 /**
  * Migrate chat messages to NeonDB
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function migrateMessages(messages: any[], sessionId: string): Promise<{ success: number; errors: string[] }> {
   const errors: string[] = [];
   let success = 0;
 
   // Group messages by conversation
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const conversationMap = new Map<string, any[]>();
   
   for (const message of messages) {
