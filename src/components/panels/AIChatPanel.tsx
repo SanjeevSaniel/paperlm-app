@@ -3,7 +3,7 @@
 import { useDocumentContext } from '@/contexts/DocumentContext';
 import { useUsage } from '@/contexts/UsageContext';
 import { getSessionId } from '@/lib/sessionStorage';
-import { ChatMessage } from '@/types';
+import { ChatMessage, Citation } from '@/types';
 import { useUser } from '@clerk/nextjs';
 import { AnimatePresence } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
@@ -32,6 +32,28 @@ export default function AIChatPanel() {
   >(null);
   const [enableStreaming, setEnableStreaming] = useState(true);
   const [streamingCitations, setStreamingCitations] = useState<EnhancedCitation[]>([]);
+  
+  // Convert EnhancedCitation to Citation format
+  const convertCitations = (enhancedCitations: EnhancedCitation[]): Citation[] => {
+    return enhancedCitations.map((citation, index) => ({
+      id: citation.id,
+      documentId: citation.documentId || '',
+      documentName: citation.documentName || 'Unknown Document',
+      documentType: citation.documentType,
+      sourceUrl: citation.sourceUrl,
+      loader: 'enhanced', // Default loader since EnhancedCitation doesn't have this
+      chunkId: citation.chunkId || `chunk-${index}`,
+      chunkIndex: index, // Use array index as chunk index
+      content: citation.content,
+      fullContent: citation.fullContent || citation.content,
+      startChar: 0, // Default values since EnhancedCitation doesn't have these
+      endChar: citation.content.length,
+      relevanceScore: citation.relevanceScore,
+      uploadedAt: undefined, // EnhancedCitation doesn't have uploadedAt
+      author: citation.author,
+      publishedAt: citation.publishedAt,
+    }));
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { hasDocuments, documentCount } = useDocumentContext();
@@ -56,7 +78,7 @@ export default function AIChatPanel() {
         role: 'assistant',
         content: content,
         timestamp: new Date(),
-        citations: streamingCitations,
+        citations: convertCitations(streamingCitations),
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -295,7 +317,7 @@ export default function AIChatPanel() {
         const streamResult = await startStream(endpoint, requestBody);
         // Citations are already handled in the hook's response parsing
         if (streamResult.citations) {
-          setStreamingCitations(streamResult.citations);
+          setStreamingCitations(streamResult.citations as EnhancedCitation[]);
         }
       } else {
         // Use non-streaming approach (fallback)
