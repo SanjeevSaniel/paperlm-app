@@ -22,16 +22,12 @@ async function connectDB() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((conn) => ({
-      conn,
-      promise: null,
-    }));
+    cached.promise = mongoose.connect(MONGODB_URI!, opts);
   }
 
   try {
-    const result = await cached.promise;
-    cached.conn = result;
-    return result;
+    cached.conn = await cached.promise;
+    return cached.conn;
   } catch (e) {
     cached.promise = null;
     throw e;
