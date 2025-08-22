@@ -143,7 +143,7 @@ export default function LandingUseCases() {
 
         {/* Use Cases Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {useCases.map((useCase, index) => {
+          {useCases.map((useCase) => {
             const IconComponent = useCase.icon;
             
             return (
