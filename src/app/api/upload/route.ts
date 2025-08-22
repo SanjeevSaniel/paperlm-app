@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
       await addDocuments(docs);
 
       // Update document status and processing info
-      const updatedDocument = await DocumentRepository.updateProcessingResults(documentId, {
+      await DocumentRepository.updateProcessingResults(documentId, {
         chunksCount: chunks.length,
         qdrantCollectionId: 'paperlm_documents', // You might want to make this configurable
       });
