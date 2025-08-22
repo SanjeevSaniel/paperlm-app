@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
 
 interface UserData {
@@ -38,7 +38,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     if (!user) {
       setUserData(null);
       setLoading(false);
@@ -56,13 +56,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     if (isLoaded) {
       fetchUserData();
     }
-  }, [user, isLoaded]);
+  }, [user, isLoaded, fetchUserData]);
 
   const refreshUserData = async () => {
     await fetchUserData();

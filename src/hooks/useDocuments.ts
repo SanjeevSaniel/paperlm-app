@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getSessionData } from '@/lib/sessionStorage';
+// import { getSessionData } from '@/lib/sessionStorage';
 
 export function useDocuments() {
   const [hasDocuments, setHasDocuments] = useState(false);

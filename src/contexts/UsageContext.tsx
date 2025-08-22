@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useAuthStore } from '@/stores/authStore';
-import { useSubscription } from './SubscriptionContext';
+// import { useSubscription } from './SubscriptionContext';
 
 interface UsageContextType {
   chatCount: number;
