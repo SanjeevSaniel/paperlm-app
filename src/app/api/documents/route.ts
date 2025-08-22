@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
     }
 
-    let documents = [];
+    let documents: any[] = [];
 
     if (userId) {
       // For authenticated users, get user and their documents for this session
