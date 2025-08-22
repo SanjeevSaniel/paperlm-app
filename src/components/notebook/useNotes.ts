@@ -24,7 +24,7 @@ import { Note, Document, FilterState, NoteTypeFilter } from './types';
 export function useNotes() {
   const { user } = useUser();
   const { hasDocuments } = useDocumentContext();
-  const { shouldRefresh, resetRefresh } = useNotebookContext();
+  const { refreshTrigger } = useNotebookContext();
 
   // State management
   const [notes, setNotes] = useState<Note[]>([]);
@@ -120,11 +120,10 @@ export function useNotes() {
    * Handle context refresh triggers
    */
   useEffect(() => {
-    if (shouldRefresh) {
+    if (refreshTrigger > 0) {
       loadNotesFromAPI();
-      resetRefresh();
     }
-  }, [shouldRefresh, loadNotesFromAPI, resetRefresh]);
+  }, [refreshTrigger, loadNotesFromAPI]);
 
   /**
    * Create a new note
