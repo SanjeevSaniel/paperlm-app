@@ -303,7 +303,7 @@ export async function similaritySearch(
           userType:
             typeof p?.userType === 'string' && 
             ['registered_free', 'registered_pro', 'temporary', 'session', 'unknown'].includes(p.userType)
-              ? p.userType as any
+              ? p.userType as 'registered_free' | 'registered_pro' | 'temporary' | 'session' | 'unknown'
               : 'unknown',
           sourceUrl: typeof p?.sourceUrl === 'string' ? p.sourceUrl : undefined,
           loader: typeof p?.loader === 'string' ? p.loader : undefined,

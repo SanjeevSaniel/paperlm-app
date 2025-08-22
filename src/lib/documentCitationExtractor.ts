@@ -240,7 +240,7 @@ export function enhanceDocumentChunksWithCitations<T extends {
     startChar: number;
     endChar: number;
     fileName: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }>(
   fullText: string,

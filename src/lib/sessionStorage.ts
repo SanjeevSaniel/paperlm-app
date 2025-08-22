@@ -114,6 +114,7 @@ async function initializeSession(sessionId: string): Promise<void> {
 /**
  * Update session documents - compatibility function
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function updateSessionDocuments(documents: any[]): void {
   const sessionId = getSessionId();
   if (!sessionId || typeof window === 'undefined') return;

@@ -99,7 +99,7 @@ export class DocumentRepository {
   // Update document status
   static async updateStatus(id: string, status: 'uploading' | 'processing' | 'ready' | 'error'): Promise<Document | null> {
     try {
-      const updateData: any = { status, updatedAt: new Date() };
+      const updateData: { status: 'uploading' | 'processing' | 'ready' | 'error'; updatedAt: Date; processedAt?: Date } = { status, updatedAt: new Date() };
       
       if (status === 'ready') {
         updateData.processedAt = new Date();
@@ -124,7 +124,7 @@ export class DocumentRepository {
       content?: string;
       chunksCount?: number;
       qdrantCollectionId?: string;
-      metadata?: any;
+      metadata?: Record<string, unknown>;
     }
   ): Promise<Document | null> {
     try {
