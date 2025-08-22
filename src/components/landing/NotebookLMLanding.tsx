@@ -2,13 +2,13 @@
 
 import { useUser, SignInButton, UserButton } from '@clerk/nextjs';
 import Link from 'next/link';
-import { FileText, MessageSquare, Sparkles, ArrowRight, Users, Zap, Shield, PlayCircle, CheckCircle, Star } from 'lucide-react';
+import { FileText, MessageSquare, Sparkles, ArrowRight, PlayCircle, CheckCircle } from 'lucide-react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef, useState } from 'react';
 import Logo from '@/components/Logo';
 
 export default function NotebookLMLanding() {
-  const { isSignedIn, user } = useUser();
+  const { isSignedIn } = useUser();
   const [activeVideo, setActiveVideo] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const containerRef = useRef(null);
@@ -298,7 +298,7 @@ export default function NotebookLMLanding() {
               See how it works
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Watch these quick demos to understand PaperLM's core features
+              Watch these quick demos to understand PaperLM&apos;s core features
             </p>
           </motion.div>
 
@@ -644,7 +644,7 @@ export default function NotebookLMLanding() {
               <div>
                 <h3 className="text-xl font-medium text-gray-900 mb-2">Upload your documents</h3>
                 <p className="text-gray-600">
-                  Drop your PDFs, research papers, or any text documents. We'll process them instantly.
+                  Drop your PDFs, research papers, or any text documents. We&apos;ll process them instantly.
                 </p>
               </div>
             </div>
