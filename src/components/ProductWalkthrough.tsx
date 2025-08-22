@@ -1,26 +1,26 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
-import Link from 'next/link';
-import { 
-  ArrowLeft, 
-  FileText, 
-  Upload, 
-  MessageSquare, 
-  Sparkles, 
-  Search, 
-  Brain,
-  Zap,
-  Target,
-  CheckCircle,
+import Logo from '@/components/Logo';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import {
+  ArrowLeft,
   ArrowRight,
   BookOpen,
+  Brain,
+  CheckCircle,
+  FileText,
   Lightbulb,
+  MessageSquare,
   RefreshCw,
-  Send
+  Search,
+  Send,
+  Sparkles,
+  Target,
+  Upload,
+  Zap,
 } from 'lucide-react';
-import Logo from '@/components/Logo';
+import Link from 'next/link';
+import React, { useRef, useState } from 'react';
 
 const AnimatedPath = ({ d, delay = 0 }: { d: string; delay?: number }) => {
   return (
