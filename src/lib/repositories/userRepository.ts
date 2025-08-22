@@ -92,7 +92,7 @@ export class UserRepository {
 
       // Check if we need to reset monthly usage
       const currentDate = new Date();
-      const lastResetDate = new Date(user.lastResetDate);
+      const lastResetDate = user.lastResetDate ? new Date(user.lastResetDate) : new Date(0);
       const shouldReset = (
         currentDate.getFullYear() !== lastResetDate.getFullYear() ||
         currentDate.getMonth() !== lastResetDate.getMonth()
@@ -123,7 +123,7 @@ export class UserRepository {
 
       // Check if we need to reset monthly usage
       const currentDate = new Date();
-      const lastResetDate = new Date(user.lastResetDate);
+      const lastResetDate = user.lastResetDate ? new Date(user.lastResetDate) : new Date(0);
       const shouldReset = (
         currentDate.getFullYear() !== lastResetDate.getFullYear() ||
         currentDate.getMonth() !== lastResetDate.getMonth()

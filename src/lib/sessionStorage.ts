@@ -80,11 +80,34 @@ export function updateSessionNotebookNotes(notes: NotebookNote[]): void {
 }
 
 /**
- * Set current session ID
+ * Set current session ID and initialize session in NeonDB
  */
 export function setSessionId(sessionId: string): void {
   if (typeof window !== 'undefined') {
     localStorage.setItem('currentSessionId', sessionId);
+    // Initialize session in NeonDB
+    initializeSession(sessionId);
+  }
+}
+
+/**
+ * Initialize session in NeonDB
+ */
+async function initializeSession(sessionId: string): Promise<void> {
+  try {
+    // Create session in database if it doesn't exist
+    await fetch('/api/session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sessionId,
+        action: 'initialize',
+      }),
+    });
+  } catch (error) {
+    console.error('Failed to initialize session in NeonDB:', error);
   }
 }
 
