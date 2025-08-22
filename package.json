@@ -15,6 +15,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.19",
     "@clerk/nextjs": "^6.31.2",
     "@google/genai": "^1.15.0",
     "@gsap/react": "^2.1.2",
@@ -35,13 +36,13 @@
     "@reactour/tour": "^3.8.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "ai": "^5.0.22",
     "better-sqlite3": "^12.2.0",
     "canvas": "^3.2.0",
     "cheerio": "^1.1.2",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.7.0",
     "clsx": "^2.1.1",
-    "dotenv": "^17.2.1",
     "drizzle-orm": "^0.44.4",
     "framer-motion": "^12.23.12",
     "gsap": "^3.13.0",
