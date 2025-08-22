@@ -1,13 +1,12 @@
 'use client';
 
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { getUserLimits, isRegisteredProUserId } from '@/lib/userIdGenerator';
+import { useAuthData } from '@/stores/authStore';
 import {
   useAppPreferencesStore,
   useProfileFormStore,
   useUserMenuStore,
 } from '@/stores/userMenuStore';
-import { useAuthData } from '@/stores/authStore';
 import { useClerk, useUser } from '@clerk/nextjs';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -35,7 +34,7 @@ interface NotionUserMenuProps {
 //   | 'billing'
 //   | 'usage';
 
-export default function UserMenu({ children, userId }: NotionUserMenuProps) {
+export default function UserMenu({ children }: NotionUserMenuProps) {
   const { user } = useUser();
   const { signOut } = useClerk();
   const authData = useAuthData();
@@ -46,7 +45,10 @@ export default function UserMenu({ children, userId }: NotionUserMenuProps) {
   const { theme, setTheme, emailNotifications, setEmailNotifications } =
     useAppPreferencesStore();
 
-  const userLimits = authData.user?.usage || { documentsUploaded: 0, messagesUsed: 0 };
+  const userLimits = authData.user?.usage || {
+    documentsUploaded: 0,
+    messagesUsed: 0,
+  };
   const isPro = authData.user?.subscription.plan === 'pro';
 
   useEffect(() => {
@@ -506,7 +508,12 @@ export default function UserMenu({ children, userId }: NotionUserMenuProps) {
                         <div
                           className='bg-orange-600 h-2 rounded-full'
                           style={{
-                            width: isPro ? '100%' : `${Math.min((userLimits.documentsUploaded / 1) * 100, 100)}%`,
+                            width: isPro
+                              ? '100%'
+                              : `${Math.min(
+                                  (userLimits.documentsUploaded / 1) * 100,
+                                  100,
+                                )}%`,
                           }}
                         />
                       </div>
@@ -522,7 +529,12 @@ export default function UserMenu({ children, userId }: NotionUserMenuProps) {
                         <div
                           className='bg-orange-600 h-2 rounded-full'
                           style={{
-                            width: isPro ? '100%' : `${Math.min((userLimits.messagesUsed / 5) * 100, 100)}%`,
+                            width: isPro
+                              ? '100%'
+                              : `${Math.min(
+                                  (userLimits.messagesUsed / 5) * 100,
+                                  100,
+                                )}%`,
                           }}
                         />
                       </div>
