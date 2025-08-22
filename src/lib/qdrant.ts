@@ -192,6 +192,8 @@ export async function addDocuments(
       sourceUrl: d.metadata.sourceUrl,
       loader: d.metadata.loader,
       uploadedAt: d.metadata.uploadedAt || new Date().toISOString(),
+      userId: d.metadata.userId || 'anonymous',
+      userType: d.metadata.userType || 'free',
     };
 
     memoryStore.push({

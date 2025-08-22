@@ -1,6 +1,6 @@
 import { db } from '../neon';
 import { userSessions, type UserSession, type NewUserSession } from '@/db/schema';
-import { eq, and, lt } from 'drizzle-orm';
+import { eq, and, lt, gt } from 'drizzle-orm';
 
 export class SessionRepository {
   
@@ -42,6 +42,34 @@ export class SessionRepository {
     } catch (error) {
       console.error('Error finding sessions by user ID:', error);
       return [];
+    }
+  }
+
+  // Find or create session (alias for getOrCreate for API compatibility)
+  static async findOrCreate(sessionData: NewUserSession): Promise<UserSession | null> {
+    const existing = await this.findBySessionId(sessionData.sessionId);
+    if (existing) {
+      // Update last activity
+      return await this.updateActivity(sessionData.sessionId);
+    }
+    return await this.create(sessionData);
+  }
+
+  // Find session by session ID and user ID
+  static async findBySessionIdAndUser(sessionId: string, userId: string): Promise<UserSession | null> {
+    try {
+      const result = await db
+        .select()
+        .from(userSessions)
+        .where(and(
+          eq(userSessions.sessionId, sessionId),
+          eq(userSessions.userId, userId)
+        ))
+        .limit(1);
+      return result[0] || null;
+    } catch (error) {
+      console.error('Error finding session by ID and user:', error);
+      return null;
     }
   }
 
@@ -212,7 +240,7 @@ export class SessionRepository {
         .from(userSessions)
         .where(and(
           eq(userSessions.userId, userId),
-          lt(oneDayAgo, userSessions.lastActivity)
+          gt(userSessions.lastActivity, oneDayAgo)
         ))
         .orderBy(userSessions.lastActivity);
       

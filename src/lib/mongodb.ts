@@ -22,19 +22,20 @@ async function connectDB() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
-      return mongoose;
-    });
+    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((conn) => ({
+      conn,
+      promise: null,
+    }));
   }
 
   try {
-    cached.conn = await cached.promise;
+    const result = await cached.promise;
+    cached.conn = result;
+    return result;
   } catch (e) {
     cached.promise = null;
     throw e;
   }
-
-  return cached.conn;
 }
 
 export default connectDB;
