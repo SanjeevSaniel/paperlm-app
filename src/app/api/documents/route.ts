@@ -3,6 +3,9 @@ import { DocumentRepository } from '@/lib/repositories/documentRepository';
 import { UserRepository } from '@/lib/repositories/userRepository';
 import { NextRequest, NextResponse } from 'next/server';
 
+// Use the Document type from schema instead of defining our own
+import { Document } from '@/db/schema';
+
 export async function GET(request: NextRequest) {
   try {
     const { userId } = await auth();
@@ -13,7 +16,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
     }
 
-    let documents: any[] = [];
+    let documents: Document[] = [];
 
     if (userId) {
       // For authenticated users, get user and their documents for this session
@@ -36,7 +39,7 @@ export async function GET(request: NextRequest) {
         type: doc.fileType || 'text/plain',
         uploadedAt: doc.uploadedAt,
         chunksCount: doc.chunksCount,
-        ...doc.metadata,
+        ...(doc.metadata as Record<string, unknown> || {}),
       },
       status: doc.status,
       sourceUrl: doc.sourceUrl,

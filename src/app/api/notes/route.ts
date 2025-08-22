@@ -3,6 +3,7 @@ import { NotesRepository } from '@/lib/repositories/notesRepository';
 import { UserRepository } from '@/lib/repositories/userRepository';
 import { SessionRepository } from '@/lib/repositories/sessionRepository';
 import { NextRequest, NextResponse } from 'next/server';
+import { Note } from '@/db/schema';
 
 export async function POST(request: NextRequest) {
   try {
@@ -86,7 +87,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ note });
     } else if (sessionId) {
       // Get notes for session
-      let notes: any[] = [];
+      let notes: Note[] = [];
       
       if (userId) {
         const user = await UserRepository.findByClerkId(userId);
