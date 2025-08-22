@@ -1,0 +1,112 @@
+/* Enhanced Markdown Styling for AI Responses */
+@tailwind components;
+
+@layer components {
+  .markdown-content {
+    @apply text-sm leading-relaxed;
+  }
+
+  .markdown-content > *:first-child {
+    @apply mt-0;
+  }
+
+  .markdown-content > *:last-child {
+    @apply mb-0;
+  }
+
+  /* Headings */
+  .markdown-content h1 {
+    @apply text-xl font-bold text-gray-900 mb-3 mt-4 pb-2 border-b border-gray-200;
+  }
+
+  .markdown-content h2 {
+    @apply text-lg font-semibold text-gray-800 mb-3 mt-4;
+  }
+
+  .markdown-content h3 {
+    @apply text-base font-medium text-gray-700 mb-2 mt-3;
+  }
+
+  /* Lists */
+  .markdown-content ul {
+    @apply mb-3 pl-4 space-y-1;
+  }
+
+  .markdown-content ol {
+    @apply mb-3 pl-4 space-y-1;
+  }
+
+  .markdown-content li {
+    @apply text-gray-700 leading-relaxed;
+  }
+
+  /* Paragraphs */
+  .markdown-content p {
+    @apply text-gray-700 leading-relaxed mb-3;
+  }
+
+  /* Blockquotes */
+  .markdown-content blockquote {
+    @apply border-l-4 border-blue-500 bg-blue-50/50 pl-4 pr-4 py-2 mb-3 rounded-r-md;
+  }
+
+  .markdown-content blockquote p {
+    @apply text-gray-600 italic mb-0;
+  }
+
+  /* Code */
+  .markdown-content code {
+    @apply bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-xs font-mono;
+  }
+
+  .markdown-content pre {
+    @apply bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto mb-3 text-xs;
+  }
+
+  .markdown-content pre code {
+    @apply bg-transparent text-inherit p-0;
+  }
+
+  /* Tables */
+  .markdown-content table {
+    @apply w-full border-collapse border border-gray-200 rounded-lg mb-4 overflow-hidden;
+  }
+
+  .markdown-content th {
+    @apply bg-gray-50 px-3 py-2 text-left text-xs font-medium text-gray-600 uppercase border-b border-gray-200;
+  }
+
+  .markdown-content td {
+    @apply px-3 py-2 text-sm text-gray-700 border-b border-gray-100;
+  }
+
+  /* Links */
+  .markdown-content a {
+    @apply text-blue-600 hover:text-blue-800 underline transition-colors;
+  }
+
+  /* Horizontal rules */
+  .markdown-content hr {
+    @apply border-0 border-t border-gray-300 my-4;
+  }
+
+  /* Strong and emphasis */
+  .markdown-content strong {
+    @apply font-semibold text-gray-900;
+  }
+
+  .markdown-content em {
+    @apply italic text-gray-600;
+  }
+
+  /* Professional spacing and flow */
+  .markdown-content > * + * {
+    @apply mt-3;
+  }
+
+  .markdown-content > h1 + *,
+  .markdown-content > h2 + *,
+  .markdown-content > h3 + * {
+    @apply mt-2;
+  }
+}

@@ -30,8 +30,16 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files (specific files to ignore)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# env files that are safe to commit
+!.env.example
+!.env.sample
 
 # vercel
 .vercel
@@ -39,3 +47,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# clerk configuration (can include secrets)
+/.clerk/
+.clerk/
+clerk_settings.json
+clerk-settings.json
+
+# Claude Code settings (contains tokens/credentials)
+.claude/settings.local.json

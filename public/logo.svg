@@ -1,0 +1,43 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Main logo container - clean NotebookLM-inspired design -->
+  <rect x="2" y="2" width="28" height="28" rx="6" fill="white" stroke="#d1d5db" stroke-width="1"/>
+  
+  <!-- Document header area -->
+  <g transform="translate(6, 8)">
+    <!-- Orange accent dot -->
+    <circle cx="2" cy="2" r="1.5" fill="#fb923c"/>
+    <!-- Header dots -->
+    <g transform="translate(16, 0)">
+      <circle cx="0" cy="2" r="0.5" fill="#d1d5db"/>
+      <circle cx="2" cy="2" r="0.5" fill="#d1d5db"/>
+      <circle cx="4" cy="2" r="0.5" fill="#d1d5db"/>
+    </g>
+  </g>
+  
+  <!-- Document content lines -->
+  <g transform="translate(6, 14)">
+    <!-- Line 1 - full width -->
+    <rect x="0" y="0" width="20" height="1" rx="0.5" fill="#e5e7eb"/>
+    <!-- Line 2 - 4/5 width -->
+    <rect x="0" y="3" width="16" height="1" rx="0.5" fill="#d1d5db"/>
+    <!-- Line 3 - highlighted blue line -->
+    <rect x="0" y="6" width="20" height="1" rx="0.5" fill="#3b82f6"/>
+    <!-- Line 4 - 3/5 width -->
+    <rect x="0" y="9" width="12" height="1" rx="0.5" fill="#e5e7eb"/>
+  </g>
+  
+  <!-- Bottom accent -->
+  <g transform="translate(22, 26)">
+    <rect x="0" y="0" width="4" height="1" rx="0.5" fill="#fb923c"/>
+  </g>
+  
+  <!-- Subtle gradient overlay -->
+  <rect x="2" y="2" width="28" height="28" rx="6" fill="url(#subtleGradient)" opacity="0.1"/>
+  
+  <defs>
+    <linearGradient id="subtleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:transparent"/>
+      <stop offset="100%" style="stop-color:#6b7280"/>
+    </linearGradient>
+  </defs>
+</svg>
