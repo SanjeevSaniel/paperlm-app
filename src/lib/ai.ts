@@ -77,7 +77,6 @@ export async function generateAIResponse(
         ...messages,
       ],
       temperature: options?.temperature ?? 0.3,
-      maxTokens: options?.maxTokens ?? 2000,
     });
 
     return result.text;
@@ -108,10 +107,9 @@ export async function streamAIResponse(
         ...messages,
       ],
       temperature: options?.temperature ?? 0.3,
-      maxTokens: options?.maxTokens ?? 2000,
     });
 
-    return result.toDataStreamResponse();
+    return result.toTextStreamResponse();
   } catch (error) {
     console.error('AI streaming error:', error);
     throw new Error('Failed to stream AI response');
@@ -146,7 +144,6 @@ Return only the alternative queries, one per line, without numbering or explanat
       model: openai(AI_MODEL),
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
-      maxTokens: 150,
     });
 
     const variations = result.text
