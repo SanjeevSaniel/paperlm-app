@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth();
     const body = await request.json();
-    const { message, sessionId, conversationId, documentIds = [] } = body;
+    const { message, sessionId, conversationId, documentIds = [], role = 'user', citations } = body;
 
     if (!message || !sessionId) {
       return NextResponse.json({ error: 'Message and session ID are required' }, { status: 400 });
@@ -48,25 +48,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create user message
-    const userMessage = await MessageRepository.create({
+    // Create message with specified role
+    const newMessage = await MessageRepository.create({
       conversationId: conversation.id,
       userId: user?.id || 'anonymous',
-      role: 'user',
+      role: role as 'user' | 'assistant' | 'system',
       content: message,
       tokenCount: message.length, // Simple token estimation
+      citations: citations || null,
       metadata: {
         documentIds: documentIds,
         sessionId: sessionId,
       },
     });
 
-    if (!userMessage) {
-      return NextResponse.json({ error: 'Failed to save user message' }, { status: 500 });
+    if (!newMessage) {
+      return NextResponse.json({ error: 'Failed to save message' }, { status: 500 });
     }
 
     // Update session tracking
-    if (user) {
+    if (user && userId) {
       await SessionRepository.incrementMessageCount(sessionId);
       await UserRepository.incrementMessageUsage(userId);
     }
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       conversationId: conversation.id,
-      messageId: userMessage.id,
+      messageId: newMessage.id,
       success: true,
       // The actual AI response would be handled separately
       // This endpoint just handles the message storage
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
       });
     } else if (sessionId) {
       // Get all conversations for session
-      let conversations = [];
+      let conversations: any[] = [];
       
       if (userId) {
         const user = await UserRepository.findByClerkId(userId);

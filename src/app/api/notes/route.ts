@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ note });
     } else if (sessionId) {
       // Get notes for session
-      let notes = [];
+      let notes: any[] = [];
       
       if (userId) {
         const user = await UserRepository.findByClerkId(userId);
