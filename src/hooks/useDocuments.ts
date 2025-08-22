@@ -12,10 +12,9 @@ export function useDocuments() {
       try {
         setIsLoading(true);
         
-        // Check session storage for documents (anonymous users)
-        const sessionData = getSessionData();
-        const documents = sessionData?.documents || [];
-        setHasDocuments(documents.length > 0);
+        // Note: This will be updated to use API in the future
+        // For now, assume no documents from localStorage
+        setHasDocuments(false);
       } catch (error) {
         console.error('Error checking documents:', error);
         setHasDocuments(false);
@@ -28,16 +27,8 @@ export function useDocuments() {
   }, []);
 
   const refreshDocuments = () => {
-    const checkDocuments = async () => {
-      try {
-        const sessionData = getSessionData();
-        const documents = sessionData?.documents || [];
-        setHasDocuments(documents.length > 0);
-      } catch (error) {
-        console.error('Error refreshing documents:', error);
-      }
-    };
-    checkDocuments();
+    // Note: This will be updated to use API in the future
+    setHasDocuments(false);
   };
 
   return { hasDocuments, isLoading, refreshDocuments };
