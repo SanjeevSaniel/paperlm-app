@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { useUser } from '@clerk/nextjs';
-import type { IUser } from '@/models/User';
 
 interface UserData {
   id: string;

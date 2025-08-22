@@ -10,7 +10,8 @@ const isPublicRoute = createRouteMatcher([
   '/terms',
   '/help',
   '/contact',
-  '/api/cleanup' // Public cleanup endpoint
+  '/api/cleanup', // Public cleanup endpoint
+  '/api/test-neon' // Public test endpoint
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
