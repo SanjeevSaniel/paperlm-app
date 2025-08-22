@@ -148,7 +148,7 @@ export default function LandingFAQ() {
             Got Questions?
             <br />
             <span className="bg-gradient-to-r from-amber-600/80 to-orange-600/80 bg-clip-text text-transparent">
-              We've Got Answers
+              We&apos;ve Got Answers
             </span>
           </h2>
 
