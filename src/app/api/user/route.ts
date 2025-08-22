@@ -1,6 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
-import connectDB from '@/lib/mongodb';
-import User from '@/models/User';
+import { UserRepository } from '@/lib/repositories/userRepository';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET() {
@@ -11,35 +10,37 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-    
-    let user = await User.findOne({ clerkId: userId });
+    // Get or create user using NeonDB
+    const placeholderEmail = `${userId}@placeholder.local`;
+    const user = await UserRepository.getOrCreate(userId, placeholderEmail);
     
     if (!user) {
-      // Create user if doesn't exist with placeholder email
-      // This will be updated when we get the real email from Clerk
-      const placeholderEmail = `${userId}@placeholder.local`;
-      user = new User({
-        clerkId: userId,
-        email: placeholderEmail,
-      });
-      await user.save();
+      return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
     }
-
-    // Reset monthly usage if needed
-    user.resetMonthlyUsage();
-    await user.save();
 
     return NextResponse.json({
       user: {
-        id: user._id,
+        id: user.id,
         clerkId: user.clerkId,
         email: user.email,
-        subscription: user.subscription,
-        usage: user.usage,
-        canUploadDocument: user.canUploadDocument(),
-        canSendMessage: user.canSendMessage(),
-        isSubscriptionExpired: user.isSubscriptionExpired(),
+        firstName: user.firstName,
+        lastName: user.lastName,
+        subscription: {
+          plan: user.subscriptionPlan,
+          status: user.subscriptionStatus,
+          startDate: user.subscriptionStartDate,
+          endDate: user.subscriptionEndDate,
+          stripeCustomerId: user.stripeCustomerId,
+          stripeSubscriptionId: user.stripeSubscriptionId,
+        },
+        usage: {
+          documentsUploaded: user.documentsUploaded,
+          messagesUsed: user.messagesUsed,
+          lastResetDate: user.lastResetDate,
+        },
+        canUploadDocument: UserRepository.canUploadDocument(user),
+        canSendMessage: UserRepository.canSendMessage(user),
+        isSubscriptionExpired: UserRepository.isSubscriptionExpired(user),
       }
     });
   } catch (error) {
@@ -60,40 +61,44 @@ export async function POST(request: NextRequest) {
     }
 
     const { action } = await request.json();
-
-    await connectDB();
     
-    const user = await User.findOne({ clerkId: userId });
+    let user = await UserRepository.findByClerkId(userId);
     
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     if (action === 'increment_document') {
-      if (!user.canUploadDocument()) {
+      if (!UserRepository.canUploadDocument(user)) {
         return NextResponse.json(
           { error: 'Document upload limit reached' },
           { status: 403 }
         );
       }
-      user.usage.documentsUploaded += 1;
-      await user.save();
+      user = await UserRepository.incrementDocumentUsage(userId);
     } else if (action === 'increment_message') {
-      if (!user.canSendMessage()) {
+      if (!UserRepository.canSendMessage(user)) {
         return NextResponse.json(
           { error: 'Message limit reached' },
           { status: 403 }
         );
       }
-      user.usage.messagesUsed += 1;
-      await user.save();
+      user = await UserRepository.incrementMessageUsage(userId);
+    }
+
+    if (!user) {
+      return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
     }
 
     return NextResponse.json({
       success: true,
-      usage: user.usage,
-      canUploadDocument: user.canUploadDocument(),
-      canSendMessage: user.canSendMessage(),
+      usage: {
+        documentsUploaded: user.documentsUploaded,
+        messagesUsed: user.messagesUsed,
+        lastResetDate: user.lastResetDate,
+      },
+      canUploadDocument: UserRepository.canUploadDocument(user),
+      canSendMessage: UserRepository.canSendMessage(user),
     });
   } catch (error) {
     console.error('User update error:', error);

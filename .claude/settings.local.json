@@ -24,7 +24,9 @@
       "WebSearch",
       "Bash(npm run lint:*)",
       "WebFetch(domain:www.notion.so)",
-      "WebFetch(domain:www.notion.com)"
+      "WebFetch(domain:www.notion.com)",
+      "Bash(npm run:*)",
+      "Bash(NEON_DATABASE_URL=\"postgresql://neondb_owner:npg_0jGlVXoqn4JN@ep-long-surf-a1qp3osi-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require\" npm run db:push)"
     ],
     "deny": [],
     "ask": [],
