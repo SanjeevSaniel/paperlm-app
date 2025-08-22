@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, MessageCircle, FileText, Sparkles } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Bot, MessageCircle, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface AIAssistantAnimationProps {
   isVisible: boolean;
