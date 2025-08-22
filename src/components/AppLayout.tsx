@@ -26,6 +26,10 @@ import DocumentSourcesPanel from './panels/DocumentSourcesPanel';
 import SmartNotebookPanel from './panels/SmartNotebookPanel';
 import { Card, CardContent, CardHeader } from './ui';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import DataMigrationDialog from './DataMigrationDialog';
+import { hasLocalStorageData } from '@/lib/dataMigration';
+import { getSessionId, setSessionId } from '@/lib/sessionStorage';
+import { createId } from '@paralleldrive/cuid2';
 
 // Props typing for the three panels
 type ChatPanelComponent = React.ComponentType<{ isCollapsed?: boolean }>;
@@ -62,6 +66,28 @@ function AppLayoutContent({ userId }: { userId?: string }) {
     new Set(),
   );
   const [isPageLoading, setIsPageLoading] = useState(true);
+  const [showMigrationDialog, setShowMigrationDialog] = useState(false);
+
+  // Initialize session and check for migration on component mount
+  useEffect(() => {
+    // Initialize session
+    const initializeUserSession = () => {
+      let sessionId = getSessionId();
+      if (!sessionId) {
+        // Create new session ID
+        sessionId = createId();
+        setSessionId(sessionId);
+      }
+      
+      // Check if there's data to migrate
+      if (hasLocalStorageData()) {
+        setShowMigrationDialog(true);
+      }
+    };
+    
+    // Delay to ensure localStorage is accessible
+    setTimeout(initializeUserSession, 1000);
+  }, []);
 
   // Page load animation
   useEffect(() => {
@@ -486,6 +512,16 @@ function AppLayoutContent({ userId }: { userId?: string }) {
           error: {
             iconTheme: { primary: '#ef4444', secondary: '#ffffff' },
           },
+        }}
+      />
+
+      {/* Data Migration Dialog */}
+      <DataMigrationDialog
+        isOpen={showMigrationDialog}
+        onClose={() => setShowMigrationDialog(false)}
+        onMigrationComplete={() => {
+          // Refresh the page to ensure all components load fresh data from API
+          window.location.reload();
         }}
       />
     </motion.div>

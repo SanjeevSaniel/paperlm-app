@@ -11,7 +11,6 @@ import {
   Trash2,
   Video,
 } from 'lucide-react';
-import React from 'react';
 
 interface CompactDocumentCardProps {
   document: {
