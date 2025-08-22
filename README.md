@@ -78,7 +78,7 @@ A sophisticated Retrieval Augmented Generation (RAG) application that transforms
 ### Backend Infrastructure
 
 - **Runtime**: Node.js with modern ES modules
-- **Database**: MongoDB for document and user data storage
+- **Database**: NeonDB (PostgreSQL) for document and user data storage
 - **Authentication**: Clerk for secure user management and social authentication
 - **Session Management**: Enhanced local storage with automatic data persistence
 - **Vector Database**: Qdrant for semantic search (with intelligent fallback to local storage)
@@ -136,7 +136,7 @@ For detailed implementation information, see [VERCEL_AI_SDK_INTEGRATION.md](./VE
 - **Node.js** 18.0 or higher
 - **npm** 9.0 or higher
 - **OpenAI API Key** (required for AI functionality)
-- **MongoDB** (local installation or MongoDB Atlas cloud service)
+- **NeonDB Account** (PostgreSQL database service - required)
 - **Clerk Account** (optional - for user authentication features)
 - **Qdrant** (optional - for enhanced vector search, falls back to local storage)
 
@@ -175,48 +175,49 @@ For detailed implementation information, see [VERCEL_AI_SDK_INTEGRATION.md](./VE
    
    # OpenAI Configuration (Required)
    OPENAI_API_KEY=sk-your_openai_api_key_here
+   OPENAI_MODEL=gpt-4o
+   
+   # Database Configuration (Required)
+   NEON_DATABASE_URL=postgresql://username:password@hostname:5432/database?sslmode=require
    
    # ===== OPTIONAL SETTINGS =====
    
    # Clerk Authentication (Optional - enables user accounts)
    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your_clerk_publishable_key
    CLERK_SECRET_KEY=sk_test_your_clerk_secret_key
-   NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-   NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+   CLERK_WEBHOOK_SECRET=whsec_your_webhook_secret
    
    # Vector Database (Optional - falls back to local storage)
    QDRANT_URL=http://localhost:6333
    QDRANT_API_KEY=your_qdrant_api_key_here
    
-   # File Storage (Optional - for cloud file management)
-   CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-   CLOUDINARY_API_KEY=your_cloudinary_api_key
-   CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+   # Additional AI Models (Optional)
+   GEMINI_API_KEY=your_gemini_api_key_here
    ```
 
-4. **Database Setup (Optional)**
+4. **Database Setup (Required)**
 
-   For persistent data storage across sessions:
+   PaperLM uses NeonDB (PostgreSQL) for data persistence:
 
-   **Option A: Local MongoDB**
+   **NeonDB Setup (Recommended)**
 
+   1. Create account at [Neon Console](https://console.neon.tech)
+   2. Create a new project
+   3. Create a database
+   4. Copy the connection string from the "Connect" section
+   5. Update `NEON_DATABASE_URL` in your `.env.local` file
+   6. Run database migrations:
+   
    ```bash
-   # Install MongoDB Community Edition
-   # macOS with Homebrew:
-   brew install mongodb-community
+   # Install Drizzle CLI
+   npm install -g drizzle-kit
    
-   # Start MongoDB service
-   brew services start mongodb-community
+   # Push database schema
+   npm run db:push
    
-   # Verify connection
-   mongosh --eval "db.adminCommand('ismaster')"
+   # Generate database client
+   npm run db:generate
    ```
-
-   **Option B: MongoDB Atlas (Recommended for production)**
-   1. Create account at [MongoDB Atlas](https://www.mongodb.com/atlas)
-   2. Create a new cluster
-   3. Get connection string and update `MONGODB_URI`
-   4. Add your IP to whitelist
 
 5. **Start the Development Server**
 
@@ -418,11 +419,17 @@ The tour covers:
 ## 📝 Development Scripts
 
 ```bash
-npm run dev      # Start development server
+# Development
+npm run dev      # Start development server with Turbopack
 npm run build    # Build for production
 npm run start    # Start production server
 npm run lint     # Run ESLint
-npm run typecheck # Run TypeScript type checking
+
+# Database (Drizzle ORM with NeonDB)
+npm run db:push     # Push schema changes to database
+npm run db:generate # Generate database client
+npm run db:migrate  # Run database migrations
+npm run db:studio   # Open Drizzle Studio (database GUI)
 ```
 
 ## 🔀 Development Workflow & Branching Strategy
