@@ -26,8 +26,8 @@ export function UsageProvider({ children }: { children: ReactNode }) {
   const [chatCount, setChatCount] = useState(0);
   const [documentCount, setDocumentCount] = useState(0);
   
-  const maxFreeChats = 5;
-  const maxFreeDocuments = 1;
+  const maxFreeChats = 10;
+  const maxFreeDocuments = 2;
 
   // Load usage counts from auth store for authenticated users
   useEffect(() => {
