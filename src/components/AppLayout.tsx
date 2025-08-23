@@ -4,8 +4,12 @@ import { DocumentProvider } from '@/contexts/DocumentContext';
 import { NotebookProvider } from '@/contexts/NotebookContext';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { UsageProvider, useUsage } from '@/contexts/UsageContext';
+import { hasLocalStorageData } from '@/lib/dataMigration';
+import { getSessionId, setSessionId } from '@/lib/sessionStorage';
+import { useAuthData } from '@/stores/authStore';
 import { PanelType } from '@/types';
 import { useUser } from '@clerk/nextjs';
+import { createId } from '@paralleldrive/cuid2';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ChevronLeft,
@@ -17,19 +21,17 @@ import {
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { Toaster } from 'react-hot-toast';
+import AuthProvider from './AuthProvider';
+import DataMigrationDialog from './DataMigrationDialog';
 import { GuidedTourProvider, TourButton } from './GuidedTour';
 import Logo from './Logo';
-import UserMenu from './NotionUserMenu';
-import AuthProvider from './AuthProvider';
 import AIChatPanel from './panels/AIChatPanel';
 import DocumentSourcesPanel from './panels/DocumentSourcesPanel';
 import SmartNotebookPanel from './panels/SmartNotebookPanel';
 import { Card, CardContent, CardHeader } from './ui';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import DataMigrationDialog from './DataMigrationDialog';
-import { hasLocalStorageData } from '@/lib/dataMigration';
-import { getSessionId, setSessionId } from '@/lib/sessionStorage';
-import { createId } from '@paralleldrive/cuid2';
+import UserMenu from './UserMenu';
+import WelcomeScreen from './WelcomeScreen';
 
 // Props typing for the three panels
 type ChatPanelComponent = React.ComponentType<{ isCollapsed?: boolean }>;
@@ -53,6 +55,7 @@ type PanelDef = SourcesPanelDef | NotebookPanelDef | ChatPanelDef;
 
 function AppLayoutContent({ userId }: { userId?: string }) {
   const { user } = useUser();
+  const { user: authUser, isFullyLoaded } = useAuthData();
   const {
     chatCount,
     documentCount,
@@ -67,6 +70,7 @@ function AppLayoutContent({ userId }: { userId?: string }) {
   );
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [showMigrationDialog, setShowMigrationDialog] = useState(false);
+  const [showWelcomeScreen, setShowWelcomeScreen] = useState(false);
 
   // Initialize session and check for migration on component mount
   useEffect(() => {
@@ -78,13 +82,13 @@ function AppLayoutContent({ userId }: { userId?: string }) {
         sessionId = createId();
         setSessionId(sessionId);
       }
-      
+
       // Check if there's data to migrate
       if (hasLocalStorageData()) {
         setShowMigrationDialog(true);
       }
     };
-    
+
     // Delay to ensure localStorage is accessible
     setTimeout(initializeUserSession, 1000);
   }, []);
@@ -96,6 +100,16 @@ function AppLayoutContent({ userId }: { userId?: string }) {
     }, 1500);
     return () => clearTimeout(timer);
   }, []);
+
+  // Check if user needs onboarding
+  useEffect(() => {
+    if (isFullyLoaded && authUser && user) {
+      // Show welcome screen only for first-time users who haven't completed onboarding
+      if (authUser.needsOnboarding && !authUser.hasCompletedOnboarding) {
+        setShowWelcomeScreen(true);
+      }
+    }
+  }, [isFullyLoaded, authUser, user]);
 
   // Note: User auth is now handled by auth store and auth manager
 
@@ -523,6 +537,12 @@ function AppLayoutContent({ userId }: { userId?: string }) {
           // Refresh the page to ensure all components load fresh data from API
           window.location.reload();
         }}
+      />
+
+      {/* Welcome Screen for first-time users */}
+      <WelcomeScreen
+        isVisible={showWelcomeScreen}
+        onComplete={() => setShowWelcomeScreen(false)}
       />
     </motion.div>
   );
