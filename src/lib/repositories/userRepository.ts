@@ -153,7 +153,7 @@ export class UserRepository {
     }
     
     // Free users have a monthly limit
-    const FREE_UPLOAD_LIMIT = 5;
+    const FREE_UPLOAD_LIMIT = 2;
     return user.documentsUploaded < FREE_UPLOAD_LIMIT;
   }
 
@@ -164,7 +164,7 @@ export class UserRepository {
     }
     
     // Free users have a monthly limit
-    const FREE_MESSAGE_LIMIT = 50;
+    const FREE_MESSAGE_LIMIT = 10;
     return user.messagesUsed < FREE_MESSAGE_LIMIT;
   }
 
@@ -179,5 +179,23 @@ export class UserRepository {
     }
     
     return new Date() > new Date(user.subscriptionEndDate);
+  }
+
+  // Mark onboarding as completed
+  static async completeOnboarding(clerkId: string): Promise<User | null> {
+    try {
+      return await this.update(clerkId, {
+        hasCompletedOnboarding: true,
+        onboardingCompletedAt: new Date(),
+      });
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      return null;
+    }
+  }
+
+  // Check if user needs onboarding
+  static needsOnboarding(user: User): boolean {
+    return !user.hasCompletedOnboarding;
   }
 }
