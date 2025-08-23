@@ -24,6 +24,9 @@ interface UserData {
   canUploadDocument: boolean;
   canSendMessage: boolean;
   isSubscriptionExpired: boolean;
+  hasCompletedOnboarding: boolean;
+  needsOnboarding: boolean;
+  onboardingCompletedAt?: Date;
   paperlmUserId?: string;
 }
 
@@ -33,11 +36,11 @@ interface AuthState {
   paperlmUserId: string | null;
   isLoading: boolean;
   error: string | null;
-  
+
   // Authentication state
   isAuthenticated: boolean;
   isInitialized: boolean;
-  
+
   // Actions
   setUser: (user: UserData | null) => void;
   setPaperlmUserId: (id: string) => void;
@@ -45,13 +48,14 @@ interface AuthState {
   setError: (error: string | null) => void;
   setAuthenticated: (authenticated: boolean) => void;
   setInitialized: (initialized: boolean) => void;
-  
+
   // API methods
   fetchUserData: () => Promise<void>;
   incrementDocumentUsage: () => Promise<boolean>;
   incrementMessageUsage: () => Promise<boolean>;
+  completeOnboarding: () => Promise<boolean>;
   updateUserProfile: (data: Partial<UserData>) => Promise<void>;
-  
+
   // Reset
   reset: () => void;
 }
@@ -78,14 +82,20 @@ export const useAuthStore = create<AuthState>()(
 
         // Fetch user data from API
         fetchUserData: async () => {
-          const { setLoading, setError, setUser, setAuthenticated, setInitialized } = get();
-          
+          const {
+            setLoading,
+            setError,
+            setUser,
+            setAuthenticated,
+            setInitialized,
+          } = get();
+
           try {
             setLoading(true);
             setError(null);
 
             const response = await fetch('/api/user');
-            
+
             if (!response.ok) {
               if (response.status === 401) {
                 // User not authenticated
@@ -93,17 +103,22 @@ export const useAuthStore = create<AuthState>()(
                 setAuthenticated(false);
                 return;
               }
-              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+              throw new Error(
+                `HTTP ${response.status}: ${response.statusText}`,
+              );
             }
 
             const data = await response.json();
-            
+
             setUser(data.user);
             setAuthenticated(true);
-            
           } catch (error) {
             console.error('Error fetching user data:', error);
-            setError(error instanceof Error ? error.message : 'Failed to fetch user data');
+            setError(
+              error instanceof Error
+                ? error.message
+                : 'Failed to fetch user data',
+            );
             setUser(null);
             setAuthenticated(false);
           } finally {
@@ -115,7 +130,7 @@ export const useAuthStore = create<AuthState>()(
         // Increment document usage
         incrementDocumentUsage: async (): Promise<boolean> => {
           const { setError, setUser, user } = get();
-          
+
           try {
             setError(null);
 
@@ -129,11 +144,13 @@ export const useAuthStore = create<AuthState>()(
 
             if (!response.ok) {
               const errorData = await response.json();
-              throw new Error(errorData.error || 'Failed to increment document usage');
+              throw new Error(
+                errorData.error || 'Failed to increment document usage',
+              );
             }
 
             const data = await response.json();
-            
+
             // Update user data with new usage
             if (user) {
               setUser({
@@ -143,12 +160,15 @@ export const useAuthStore = create<AuthState>()(
                 canSendMessage: data.canSendMessage,
               });
             }
-            
+
             return true;
-            
           } catch (error) {
             console.error('Error incrementing document usage:', error);
-            setError(error instanceof Error ? error.message : 'Failed to increment document usage');
+            setError(
+              error instanceof Error
+                ? error.message
+                : 'Failed to increment document usage',
+            );
             return false;
           }
         },
@@ -156,7 +176,7 @@ export const useAuthStore = create<AuthState>()(
         // Increment message usage
         incrementMessageUsage: async (): Promise<boolean> => {
           const { setError, setUser, user } = get();
-          
+
           try {
             setError(null);
 
@@ -170,11 +190,13 @@ export const useAuthStore = create<AuthState>()(
 
             if (!response.ok) {
               const errorData = await response.json();
-              throw new Error(errorData.error || 'Failed to increment message usage');
+              throw new Error(
+                errorData.error || 'Failed to increment message usage',
+              );
             }
 
             const data = await response.json();
-            
+
             // Update user data with new usage
             if (user) {
               setUser({
@@ -184,12 +206,59 @@ export const useAuthStore = create<AuthState>()(
                 canSendMessage: data.canSendMessage,
               });
             }
-            
+
             return true;
-            
           } catch (error) {
             console.error('Error incrementing message usage:', error);
-            setError(error instanceof Error ? error.message : 'Failed to increment message usage');
+            setError(
+              error instanceof Error
+                ? error.message
+                : 'Failed to increment message usage',
+            );
+            return false;
+          }
+        },
+
+        // Complete onboarding
+        completeOnboarding: async (): Promise<boolean> => {
+          const { setError, setUser, user } = get();
+
+          try {
+            setError(null);
+
+            const response = await fetch('/api/user', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ action: 'complete_onboarding' }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(
+                errorData.error || 'Failed to complete onboarding',
+              );
+            }
+
+            // Update user data with new onboarding state
+            if (user) {
+              setUser({
+                ...user,
+                hasCompletedOnboarding: true,
+                needsOnboarding: false,
+                onboardingCompletedAt: new Date(),
+              });
+            }
+
+            return true;
+          } catch (error) {
+            console.error('Error completing onboarding:', error);
+            setError(
+              error instanceof Error
+                ? error.message
+                : 'Failed to complete onboarding',
+            );
             return false;
           }
         },
@@ -197,7 +266,7 @@ export const useAuthStore = create<AuthState>()(
         // Update user profile
         updateUserProfile: async (profileData: Partial<UserData>) => {
           const { setError, setUser, user } = get();
-          
+
           try {
             setError(null);
 
@@ -206,22 +275,26 @@ export const useAuthStore = create<AuthState>()(
             if (user) {
               setUser({ ...user, ...profileData });
             }
-            
           } catch (error) {
             console.error('Error updating user profile:', error);
-            setError(error instanceof Error ? error.message : 'Failed to update profile');
+            setError(
+              error instanceof Error
+                ? error.message
+                : 'Failed to update profile',
+            );
           }
         },
 
         // Reset state
-        reset: () => set({
-          user: null,
-          paperlmUserId: null,
-          isLoading: false,
-          error: null,
-          isAuthenticated: false,
-          isInitialized: false,
-        }),
+        reset: () =>
+          set({
+            user: null,
+            paperlmUserId: null,
+            isLoading: false,
+            error: null,
+            isAuthenticated: false,
+            isInitialized: false,
+          }),
       }),
       {
         name: 'auth-store',
@@ -229,12 +302,12 @@ export const useAuthStore = create<AuthState>()(
           paperlmUserId: state.paperlmUserId,
           isAuthenticated: state.isAuthenticated,
         }),
-      }
+      },
     ),
     {
       name: 'auth-store',
-    }
-  )
+    },
+  ),
 );
 
 // Hook to combine Clerk user data with our auth store
