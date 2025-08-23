@@ -41,6 +41,9 @@ export async function GET() {
         canUploadDocument: UserRepository.canUploadDocument(user),
         canSendMessage: UserRepository.canSendMessage(user),
         isSubscriptionExpired: UserRepository.isSubscriptionExpired(user),
+        hasCompletedOnboarding: user.hasCompletedOnboarding,
+        needsOnboarding: UserRepository.needsOnboarding(user),
+        onboardingCompletedAt: user.onboardingCompletedAt,
       }
     });
   } catch (error) {
@@ -84,6 +87,8 @@ export async function POST(request: NextRequest) {
         );
       }
       user = await UserRepository.incrementMessageUsage(userId);
+    } else if (action === 'complete_onboarding') {
+      user = await UserRepository.completeOnboarding(userId);
     }
 
     if (!user) {
