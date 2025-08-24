@@ -179,9 +179,12 @@ const AnimatedAppDemo: React.FC<AnimatedAppDemoProps> = ({ demoType, autoPlay = 
                 { icon: MessageSquare, text: "Start chatting with document", color: "bg-blue-100 text-blue-700" },
                 { icon: BookOpen, text: "Generate summary notes", color: "bg-purple-100 text-purple-700" },
                 { icon: Search, text: "Search within document", color: "bg-green-100 text-green-700" }
-              ].map((action, index) => (
+              ].map((action, index) => {
+                const sanitized = action.text.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 15);
+                const key = sanitized || `fallback-${index}`;
+                return (
                 <motion.div
-                  key={`action-${action.text.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 15)}`}
+                  key={`action-${key}`}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.2 }}
@@ -193,7 +196,8 @@ const AnimatedAppDemo: React.FC<AnimatedAppDemoProps> = ({ demoType, autoPlay = 
                   <span className="text-sm text-gray-700">{action.text}</span>
                   <ChevronRight className="w-4 h-4 text-gray-400 ml-auto" />
                 </motion.div>
-              ))}
+                );
+              })}
             </motion.div>
           )}
         </AnimatePresence>
