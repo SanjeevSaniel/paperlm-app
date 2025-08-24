@@ -51,8 +51,14 @@ export default function PaperApp() {
           // Update auth store with the user data
           setPaperlmUserId(data.paperlmUserId);
           
-          // Fetch additional user data to populate the store
-          await fetchUserData();
+          // Fetch additional user data to populate the store with retry logic
+          try {
+            await fetchUserData();
+            console.log('✅ User data populated successfully');
+          } catch (fetchError) {
+            console.warn('⚠️ Could not fetch user data immediately, will retry in background:', fetchError);
+            // Don't block the redirect, user data will be retried by AuthProvider
+          }
           
           // Redirect to user's workspace
           router.replace(data.workspaceUrl);

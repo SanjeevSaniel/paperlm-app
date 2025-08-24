@@ -15,19 +15,33 @@ export default function UserPaperApp() {
   const { setPaperlmUserId, fetchUserData } = useAuthStore();
   const [isValidating, setIsValidating] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [loadingMessage, setLoadingMessage] = useState('Initializing...');
+  const [loadingStep, setLoadingStep] = useState(0);
 
   const userId = params.userId as string;
 
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded) {
+      setLoadingMessage('Loading authentication...');
+      setLoadingStep(0);
+      return;
+    }
 
     const validateUser = async () => {
       try {
+        setLoadingMessage('Checking authentication status...');
+        setLoadingStep(1);
+        await new Promise(resolve => setTimeout(resolve, 300)); // Small delay for UX
+
         // Since middleware enforces authentication, user should be signed in
         if (!isSignedIn || !user?.id) {
           setValidationError('Authentication required. Please sign in.');
           return;
         }
+
+        setLoadingMessage('Verifying user permissions...');
+        setLoadingStep(2);
+        await new Promise(resolve => setTimeout(resolve, 200));
 
         // Validate that this is a Clerk User ID
         if (!userId.startsWith('user_')) {
@@ -41,11 +55,22 @@ export default function UserPaperApp() {
           return;
         }
 
+        setLoadingMessage('Setting up your workspace...');
+        setLoadingStep(3);
+        await new Promise(resolve => setTimeout(resolve, 200));
+
         // Update auth store with the paperlm user ID
         setPaperlmUserId(userId);
           
+        setLoadingMessage('Loading your documents and data...');
+        setLoadingStep(4);
+        
         // Fetch user data to ensure it's in the store
         await fetchUserData();
+
+        setLoadingMessage('Welcome back! Starting PaperLM...');
+        setLoadingStep(5);
+        await new Promise(resolve => setTimeout(resolve, 300));
 
         // If all validations pass
         setIsValidating(false);
@@ -60,10 +85,12 @@ export default function UserPaperApp() {
 
   // Show loading while validating
   if (!isLoaded || isValidating) {
+    const progressPercentage = (loadingStep / 5) * 100;
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50/60 via-amber-50/50 to-orange-50/40 flex items-center justify-center">
         <motion.div
-          className="text-center"
+          className="text-center max-w-md mx-auto px-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -71,14 +98,58 @@ export default function UserPaperApp() {
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            className="mb-4"
+            className="mb-6"
           >
-            <Loader2 className="w-8 h-8 text-amber-600 mx-auto" />
+            <Loader2 className="w-10 h-10 text-amber-600 mx-auto" />
           </motion.div>
-          <p className="text-gray-600">Validating session...</p>
-          <p className="text-sm text-gray-500 mt-2">
-            Authenticated access required
+          
+          <motion.h2 
+            className="text-xl font-semibold text-gray-800 mb-3"
+            key={loadingMessage}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            {loadingMessage}
+          </motion.h2>
+          
+          {/* Progress bar */}
+          <div className="w-full bg-gray-200 rounded-full h-2 mb-4 overflow-hidden">
+            <motion.div 
+              className="h-2 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${progressPercentage}%` }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+            />
+          </div>
+          
+          <p className="text-sm text-gray-500">
+            {isSignedIn && user ? `Welcome ${user.firstName || 'back'}!` : 'Please wait...'}
           </p>
+          
+          {/* Steps indicator */}
+          <div className="flex justify-center mt-4 space-x-2">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <motion.div
+                key={index}
+                className={`w-2 h-2 rounded-full ${
+                  index < loadingStep 
+                    ? 'bg-amber-500' 
+                    : index === loadingStep 
+                      ? 'bg-amber-400' 
+                      : 'bg-gray-300'
+                }`}
+                initial={{ scale: 0.8 }}
+                animate={{ 
+                  scale: index === loadingStep ? [0.8, 1.2, 0.8] : 0.8,
+                }}
+                transition={{ 
+                  duration: index === loadingStep ? 1.5 : 0.3,
+                  repeat: index === loadingStep ? Infinity : 0 
+                }}
+              />
+            ))}
+          </div>
         </motion.div>
       </div>
     );
