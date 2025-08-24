@@ -225,6 +225,7 @@ const AnimatedAppDemo: React.FC<AnimatedAppDemoProps> = ({ demoType, autoPlay = 
             <AnimatePresence>
               {currentStep >= 0 && (
                 <motion.div
+                  key="chat-user-message-1"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="flex justify-end"
@@ -237,6 +238,7 @@ const AnimatedAppDemo: React.FC<AnimatedAppDemoProps> = ({ demoType, autoPlay = 
 
               {currentStep >= 1 && (
                 <motion.div
+                  key="chat-ai-response-1"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
@@ -283,6 +285,7 @@ const AnimatedAppDemo: React.FC<AnimatedAppDemoProps> = ({ demoType, autoPlay = 
 
               {currentStep >= 3 && (
                 <motion.div
+                  key="chat-user-message-2"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 1.5 }}
@@ -336,6 +339,7 @@ const AnimatedAppDemo: React.FC<AnimatedAppDemoProps> = ({ demoType, autoPlay = 
         <AnimatePresence>
           {currentStep >= 0 && (
             <motion.div
+              key="notes-auto-summary"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-white rounded-lg p-4 border border-gray-200"
@@ -369,6 +373,7 @@ const AnimatedAppDemo: React.FC<AnimatedAppDemoProps> = ({ demoType, autoPlay = 
 
           {currentStep >= 2 && (
             <motion.div
+              key="notes-key-insights"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1 }}
@@ -392,6 +397,7 @@ const AnimatedAppDemo: React.FC<AnimatedAppDemoProps> = ({ demoType, autoPlay = 
           )}
 
           <motion.div
+            key="notes-footer-text"
             initial={{ opacity: 0 }}
             animate={{ opacity: currentStep >= 2 ? 1 : 0 }}
             transition={{ delay: 1.5 }}
