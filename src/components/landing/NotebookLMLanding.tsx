@@ -375,9 +375,12 @@ export default function NotebookLMLanding() {
                       "Intelligent text extraction and chunking",
                       "OCR support for scanned documents",
                       "Instant AI processing and indexing"
-                    ].map((feature, index) => (
+                    ].map((feature, index) => {
+                      const sanitized = feature.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 20);
+                      const key = sanitized || `fallback-${index}`;
+                      return (
                       <motion.div
-                        key={`upload-${feature.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 20)}`}
+                        key={`upload-${key}`}
                         className="flex items-center gap-3"
                         initial={{ opacity: 0, x: -20 }}
                         whileInView={{ opacity: 1, x: 0 }}
@@ -387,7 +390,8 @@ export default function NotebookLMLanding() {
                         <div className="w-2 h-2 bg-gradient-to-r from-orange-500 to-amber-600 rounded-full"></div>
                         <span className="text-gray-700">{feature}</span>
                       </motion.div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </motion.div>
               </div>
@@ -447,9 +451,12 @@ export default function NotebookLMLanding() {
                       "Contextual AI responses with citations",
                       "Multi-document knowledge synthesis",
                       "Follow-up question understanding"
-                    ].map((feature, index) => (
+                    ].map((feature, index) => {
+                      const sanitized = feature.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 20);
+                      const key = sanitized || `fallback-${index}`;
+                      return (
                       <motion.div
-                        key={`chat-${feature.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 20)}`}
+                        key={`chat-${key}`}
                         className="flex items-center gap-3"
                         initial={{ opacity: 0, x: 20 }}
                         whileInView={{ opacity: 1, x: 0 }}
@@ -459,7 +466,8 @@ export default function NotebookLMLanding() {
                         <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"></div>
                         <span className="text-gray-700">{feature}</span>
                       </motion.div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </motion.div>
               </div>
@@ -497,9 +505,12 @@ export default function NotebookLMLanding() {
                       "Key insight extraction",
                       "Structured note organization",
                       "Source citation tracking"
-                    ].map((feature, index) => (
+                    ].map((feature, index) => {
+                      const sanitized = feature.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 20);
+                      const key = sanitized || `fallback-${index}`;
+                      return (
                       <motion.div
-                        key={`notes-${feature.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 20)}`}
+                        key={`notes-${key}`}
                         className="flex items-center gap-3"
                         initial={{ opacity: 0, x: -20 }}
                         whileInView={{ opacity: 1, x: 0 }}
@@ -509,7 +520,8 @@ export default function NotebookLMLanding() {
                         <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full"></div>
                         <span className="text-gray-700">{feature}</span>
                       </motion.div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </motion.div>
               </div>
@@ -608,9 +620,12 @@ export default function NotebookLMLanding() {
                 color: "amber",
                 delay: 0.3
               }
-            ].map((feature, index) => (
+            ].map((feature, index) => {
+              const sanitized = feature.title.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 25);
+              const key = sanitized || `fallback-${index}`;
+              return (
               <motion.div
-                key={`feature-${feature.title.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 25)}`}
+                key={`feature-${key}`}
                 className="bg-white p-8 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -632,7 +647,8 @@ export default function NotebookLMLanding() {
                   {feature.description}
                 </p>
               </motion.div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Feature showcase */}
@@ -663,9 +679,12 @@ export default function NotebookLMLanding() {
                       "Context-aware AI responses", 
                       "Source citation for every answer",
                       "Multi-document knowledge synthesis"
-                    ].map((item, index) => (
+                    ].map((item, index) => {
+                      const sanitized = item.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 20);
+                      const key = sanitized || `fallback-${index}`;
+                      return (
                       <motion.div
-                        key={`showcase-${item.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 20)}`}
+                        key={`showcase-${key}`}
                         className="flex items-center gap-3"
                         initial={{ opacity: 0, x: -10 }}
                         whileInView={{ opacity: 1, x: 0 }}
@@ -675,7 +694,8 @@ export default function NotebookLMLanding() {
                         <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                         <span className="text-gray-700">{item}</span>
                       </motion.div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </motion.div>
               </div>
