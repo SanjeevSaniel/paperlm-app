@@ -40,6 +40,7 @@ interface AuthState {
   // Authentication state
   isAuthenticated: boolean;
   isInitialized: boolean;
+  isLoggingOut: boolean;
 
   // Actions
   setUser: (user: UserData | null) => void;
@@ -48,6 +49,7 @@ interface AuthState {
   setError: (error: string | null) => void;
   setAuthenticated: (authenticated: boolean) => void;
   setInitialized: (initialized: boolean) => void;
+  setLoggingOut: (loggingOut: boolean) => void;
 
   // API methods
   fetchUserData: () => Promise<void>;
@@ -71,6 +73,7 @@ export const useAuthStore = create<AuthState>()(
         error: null,
         isAuthenticated: false,
         isInitialized: false,
+        isLoggingOut: false,
 
         // Setters
         setUser: (user) => set({ user }),

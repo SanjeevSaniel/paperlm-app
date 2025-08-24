@@ -198,4 +198,23 @@ export class DocumentRepository {
       return [];
     }
   }
+
+  // Check for duplicate file uploads by name and user
+  static async findDuplicateByUserAndName(userId: string, fileName: string): Promise<Document | null> {
+    try {
+      const result = await db
+        .select()
+        .from(documents)
+        .where(and(
+          eq(documents.userId, userId),
+          eq(documents.name, fileName),
+          eq(documents.status, 'ready') // Only consider successfully processed documents
+        ))
+        .limit(1);
+      return result[0] || null;
+    } catch (error) {
+      console.error('Error checking for duplicate document:', error);
+      return null;
+    }
+  }
 }

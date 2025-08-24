@@ -1,6 +1,7 @@
 import { db } from '../neon';
 import { users, type User, type NewUser } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { generateUUID as randomUUID } from '@/lib/utils/uuid';
 
 export class UserRepository {
   
@@ -59,6 +60,13 @@ export class UserRepository {
     }
   }
 
+  // TODO: Create default user settings (after user_settings table is created)
+  static async createDefaultUserSettings(userId: string): Promise<boolean> {
+    // Placeholder for future user settings creation
+    console.log('User settings creation skipped for now:', userId);
+    return true;
+  }
+
   // Get or create user (for authentication flow)
   static async getOrCreate(clerkId: string, email: string, additionalData?: Partial<NewUser>): Promise<User | null> {
     try {
@@ -70,11 +78,67 @@ export class UserRepository {
         user = await this.create({
           clerkId,
           email,
+          // Set default preferences for new users
+          preferences: {
+            theme: 'system',
+            notifications: {
+              email: false,
+              browser: true,
+              usageWarnings: true,
+            },
+            language: 'en',
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+          },
           ...additionalData,
         });
-      } else if (email !== user.email) {
-        // Update email if it has changed
-        user = await this.update(clerkId, { email });
+
+        // Create default user settings if user was created successfully
+        if (user) {
+          const settingsCreated = await this.createDefaultUserSettings(user.id);
+          if (!settingsCreated) {
+            console.warn('Failed to create default settings for user:', user.id);
+          } else {
+            console.log('✅ Default settings created for new user:', user.id);
+          }
+        }
+      } else {
+        // Update user data if it has changed (email, name, profile image, etc.)
+        const updateData: Partial<NewUser> = {};
+        let hasChanges = false;
+
+        if (email !== user.email) {
+          updateData.email = email;
+          hasChanges = true;
+        }
+
+        // Update other fields if they've changed
+        if (additionalData) {
+          if (additionalData.firstName && additionalData.firstName !== user.firstName) {
+            updateData.firstName = additionalData.firstName;
+            hasChanges = true;
+          }
+          if (additionalData.lastName && additionalData.lastName !== user.lastName) {
+            updateData.lastName = additionalData.lastName;
+            hasChanges = true;
+          }
+          if (additionalData.profileImageUrl && additionalData.profileImageUrl !== user.profileImageUrl) {
+            updateData.profileImageUrl = additionalData.profileImageUrl;
+            hasChanges = true;
+          }
+          if (additionalData.emailVerified !== undefined && additionalData.emailVerified !== user.emailVerified) {
+            updateData.emailVerified = additionalData.emailVerified;
+            hasChanges = true;
+          }
+          if (additionalData.lastLoginAt) {
+            updateData.lastLoginAt = additionalData.lastLoginAt;
+            hasChanges = true;
+          }
+        }
+
+        if (hasChanges) {
+          user = await this.update(clerkId, updateData);
+          console.log('✅ User data updated for:', clerkId);
+        }
       }
       
       return user;

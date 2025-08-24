@@ -227,6 +227,309 @@ export async function addDocuments(
   }
 }
 
+/**
+ * Delete document and all its chunks from Qdrant vector database
+ * 
+ * @param documentId - The document ID to delete
+ * @returns Promise<boolean> - True if deletion was successful
+ */
+export async function deleteDocumentFromQdrant(documentId: string): Promise<boolean> {
+  const c = getClient();
+  if (!c) {
+    console.warn('Qdrant client not available, skipping vector deletion');
+    return false;
+  }
+
+  try {
+    console.log(`🗑️ Deleting document from Qdrant: ${documentId}`);
+    
+    // First, let's debug what collections exist and collection info
+    const collections = await c.getCollections();
+    console.log('📁 Available collections:', collections.collections?.map(col => col.name));
+    
+    const collectionExists = collections.collections?.some(col => col.name === COLLECTION_NAME);
+    if (!collectionExists) {
+      console.log(`❌ Collection ${COLLECTION_NAME} does not exist`);
+      return true;
+    }
+
+    // Get a few sample points to understand the data structure
+    const samplePoints = await c.scroll(COLLECTION_NAME, {
+      limit: 3,
+      with_payload: true,
+      with_vector: false
+    });
+    
+    console.log('🔍 Sample points structure:', JSON.stringify(samplePoints.points.map(p => ({
+      id: p.id,
+      payload: p.payload
+    })), null, 2));
+    
+    // Try different variations of scroll first to test what works
+    console.log('🧪 Testing different filter syntaxes...');
+    
+    // Test 1: Basic scroll without filter (should always work)
+    try {
+      const allPoints = await c.scroll(COLLECTION_NAME, {
+        limit: 5,
+        with_payload: true,
+        with_vector: false
+      });
+      console.log('✅ Test 1 - Basic scroll worked:', allPoints.points.length, 'points');
+    } catch (e) {
+      console.log('❌ Test 1 - Basic scroll failed:', e);
+    }
+
+    // Test 2: Our current filter syntax
+    let searchResult;
+    try {
+      searchResult = await c.scroll(COLLECTION_NAME, {
+        filter: {
+          must: [
+            {
+              key: 'documentId',
+              match: {
+                value: documentId
+              }
+            }
+          ]
+        },
+        limit: 1000,
+        with_payload: true,
+        with_vector: false
+      });
+      console.log('✅ Test 2 - Current filter syntax worked');
+    } catch (e) {
+      console.log('❌ Test 2 - Current filter syntax failed:', e);
+      
+      // Test 3: Alternative filter syntax
+      try {
+        searchResult = await c.scroll(COLLECTION_NAME, {
+          filter: {
+            must: [
+              {
+                key: 'documentId',
+                match: { value: documentId }
+              }
+            ]
+          },
+          limit: 1000,
+          with_payload: true,
+          with_vector: false
+        });
+        console.log('✅ Test 3 - Alternative filter syntax worked');
+      } catch (e2) {
+        console.log('❌ Test 3 - Alternative filter syntax failed:', e2);
+        
+        // If filtering doesn't work, get all and filter manually
+        searchResult = await c.scroll(COLLECTION_NAME, {
+          limit: 10000,
+          with_payload: true,
+          with_vector: false
+        });
+        
+        // Manual filter
+        const filteredPoints = searchResult.points.filter((point: any) => 
+          point.payload?.documentId === documentId
+        );
+        
+        searchResult = { points: filteredPoints };
+        console.log('✅ Test 4 - Manual filtering worked');
+      }
+    }
+
+    console.log(`📊 Found ${searchResult.points.length} points to delete for document: ${documentId}`);
+
+    if (searchResult.points.length === 0) {
+      console.log(`ℹ️ No points found in Qdrant for document: ${documentId}`);
+      return true; // Consider this a successful deletion since nothing exists
+    }
+
+    // Since we found points, try to delete them
+    console.log('🗑️ Attempting deletion...');
+    
+    // Approach 1: Delete by point IDs (more reliable)
+    const pointIds = searchResult.points.map((point: any) => point.id);
+    console.log(`🎯 Attempting to delete ${pointIds.length} points by IDs:`, pointIds.slice(0, 3));
+    
+    const result = await c.delete(COLLECTION_NAME, {
+      points: pointIds
+    });
+
+    console.log(`✅ Document deleted from Qdrant by point IDs:`, {
+      documentId,
+      pointsDeleted: pointIds.length,
+      operation_id: result.operation_id,
+      status: result.status
+    });
+
+    return result.status === 'completed' || result.status === 'acknowledged';
+  } catch (error) {
+    console.error('❌ Failed to delete document from Qdrant with filter:', error);
+    console.error('❌ Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    });
+    
+    // Fallback: try to delete by individual point IDs
+    try {
+      console.log('🔄 Attempting fallback deletion by point IDs...');
+      
+      const searchResult = await c.scroll(COLLECTION_NAME, {
+        filter: {
+          must: [
+            {
+              key: 'documentId',
+              match: { value: documentId }
+            }
+          ]
+        },
+        limit: 1000,
+        with_payload: true,
+        with_vector: false
+      });
+
+      if (searchResult.points.length > 0) {
+        const pointIds = searchResult.points.map(point => point.id);
+        console.log(`🎯 Deleting ${pointIds.length} points by ID for document: ${documentId}`);
+        
+        const deleteResult = await c.delete(COLLECTION_NAME, {
+          points: pointIds
+        });
+        
+        console.log(`✅ Fallback deletion completed:`, {
+          documentId,
+          pointsDeleted: pointIds.length,
+          operation_id: deleteResult.operation_id,
+          status: deleteResult.status
+        });
+        
+        return deleteResult.status === 'completed' || deleteResult.status === 'acknowledged';
+      } else {
+        console.log(`ℹ️ No points found for document ${documentId} in fallback search`);
+        return true; // Nothing to delete
+      }
+    } catch (fallbackError) {
+      console.error('❌ Fallback deletion also failed:', fallbackError);
+      console.error('❌ Fallback error details:', {
+        message: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+        stack: fallbackError instanceof Error ? fallbackError.stack : undefined,
+        name: fallbackError instanceof Error ? fallbackError.name : undefined
+      });
+      return false;
+    }
+  }
+}
+
+/**
+ * Delete specific chunks from Qdrant vector database
+ * 
+ * @param chunkIds - Array of chunk IDs to delete
+ * @returns Promise<boolean> - True if deletion was successful
+ */
+export async function deleteChunksFromQdrant(chunkIds: string[]): Promise<boolean> {
+  const c = getClient();
+  if (!c || chunkIds.length === 0) {
+    console.warn('Qdrant client not available or no chunks to delete');
+    return false;
+  }
+
+  try {
+    console.log(`🗑️ Deleting ${chunkIds.length} chunks from Qdrant`);
+    
+    // Delete specific points by their IDs
+    const result = await c.delete(COLLECTION_NAME, {
+      points: chunkIds
+    });
+
+    console.log(`✅ Chunks deleted from Qdrant:`, {
+      chunkCount: chunkIds.length,
+      operation_id: result.operation_id,
+      status: result.status
+    });
+
+    return result.status === 'completed' || result.status === 'acknowledged';
+  } catch (error) {
+    console.error('❌ Failed to delete chunks from Qdrant:', error);
+    return false;
+  }
+}
+
+/**
+ * Delete all documents for a user/session from Qdrant
+ * 
+ * @param userId - User ID (takes priority over sessionId)
+ * @param sessionId - Session ID (used if userId not provided)
+ * @returns Promise<boolean> - True if deletion was successful
+ */
+export async function deleteUserDataFromQdrant(userId?: string, sessionId?: string): Promise<boolean> {
+  const c = getClient();
+  if (!c || (!userId && !sessionId)) {
+    console.warn('Qdrant client not available or no user/session identifier provided');
+    return false;
+  }
+
+  try {
+    const identifier = userId || sessionId;
+    const filterKey = userId ? 'userId' : 'sessionId';
+    
+    console.log(`🗑️ Deleting all ${filterKey} data from Qdrant: ${identifier}`);
+    
+    const result = await c.delete(COLLECTION_NAME, {
+      filter: {
+        must: [
+          {
+            key: filterKey,
+            match: { value: identifier }
+          }
+        ]
+      }
+    });
+
+    console.log(`✅ User/session data deleted from Qdrant:`, {
+      filterKey,
+      identifier,
+      operation_id: result.operation_id,
+      status: result.status
+    });
+
+    return result.status === 'completed' || result.status === 'acknowledged';
+  } catch (error) {
+    console.error('❌ Failed to delete user/session data from Qdrant:', error);
+    return false;
+  }
+}
+
+/**
+ * Get document chunk count from Qdrant for verification
+ * 
+ * @param documentId - The document ID to check
+ * @returns Promise<number> - Number of chunks found
+ */
+export async function getDocumentChunkCount(documentId: string): Promise<number> {
+  const c = getClient();
+  if (!c) return 0;
+
+  try {
+    const result = await c.count(COLLECTION_NAME, {
+      filter: {
+        must: [
+          {
+            key: 'documentId',
+            match: { value: documentId }
+          }
+        ]
+      }
+    });
+
+    return result.count || 0;
+  } catch (error) {
+    console.warn('Failed to get chunk count from Qdrant:', error);
+    return 0;
+  }
+}
+
 export async function similaritySearch(
   query: string,
   k = 8,
@@ -365,4 +668,63 @@ export async function similaritySearch(
 
   console.log(`📝 Memory fallback search: ${results.length} results`);
   return results;
+}
+
+/**
+ * Test Qdrant connection and debug collection structure
+ */
+export async function testQdrantConnection(): Promise<void> {
+  console.log('🧪 Testing Qdrant connection...');
+  
+  const c = getClient();
+  if (!c) {
+    console.error('❌ Qdrant client not available');
+    return;
+  }
+
+  try {
+    // Test basic connection
+    const collections = await c.getCollections();
+    console.log('✅ Qdrant connection successful');
+    console.log('📁 Available collections:', collections.collections?.map(col => col.name));
+    
+    // Check if our collection exists
+    const collectionExists = collections.collections?.some(col => col.name === COLLECTION_NAME);
+    if (!collectionExists) {
+      console.log(`❌ Collection ${COLLECTION_NAME} does not exist`);
+      return;
+    }
+    
+    // Get collection info
+    const collectionInfo = await c.getCollection(COLLECTION_NAME);
+    console.log('📋 Collection info:', {
+      vectors_count: collectionInfo.vectors_count,
+      segments_count: collectionInfo.segments_count,
+      status: collectionInfo.status
+    });
+    
+    // Get sample points to understand structure
+    const samplePoints = await c.scroll(COLLECTION_NAME, {
+      limit: 5,
+      with_payload: true,
+      with_vector: false
+    });
+    
+    console.log(`📊 Sample points (${samplePoints.points.length}):`);
+    samplePoints.points.forEach((point, index) => {
+      console.log(`Point ${index + 1}:`, {
+        id: point.id,
+        payload_keys: Object.keys(point.payload || {}),
+        documentId: point.payload?.documentId,
+        filename: point.payload?.fileName
+      });
+    });
+    
+  } catch (error) {
+    console.error('❌ Qdrant connection test failed:', error);
+    console.error('❌ Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+  }
 }
