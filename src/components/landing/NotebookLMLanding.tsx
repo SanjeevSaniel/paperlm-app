@@ -377,7 +377,7 @@ export default function NotebookLMLanding() {
                       "Instant AI processing and indexing"
                     ].map((feature, index) => (
                       <motion.div
-                        key={`feature-item-${index}`}
+                        key={`upload-${feature.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 20)}`}
                         className="flex items-center gap-3"
                         initial={{ opacity: 0, x: -20 }}
                         whileInView={{ opacity: 1, x: 0 }}
@@ -449,7 +449,7 @@ export default function NotebookLMLanding() {
                       "Follow-up question understanding"
                     ].map((feature, index) => (
                       <motion.div
-                        key={`feature-item-${index}`}
+                        key={`chat-${feature.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 20)}`}
                         className="flex items-center gap-3"
                         initial={{ opacity: 0, x: 20 }}
                         whileInView={{ opacity: 1, x: 0 }}
@@ -499,7 +499,7 @@ export default function NotebookLMLanding() {
                       "Source citation tracking"
                     ].map((feature, index) => (
                       <motion.div
-                        key={`feature-item-${index}`}
+                        key={`notes-${feature.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 20)}`}
                         className="flex items-center gap-3"
                         initial={{ opacity: 0, x: -20 }}
                         whileInView={{ opacity: 1, x: 0 }}
@@ -610,7 +610,7 @@ export default function NotebookLMLanding() {
               }
             ].map((feature, index) => (
               <motion.div
-                key={`feature-card-${index}`}
+                key={`feature-${feature.title.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 25)}`}
                 className="bg-white p-8 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -665,7 +665,7 @@ export default function NotebookLMLanding() {
                       "Multi-document knowledge synthesis"
                     ].map((item, index) => (
                       <motion.div
-                        key={`feature-item-${index}`}
+                        key={`showcase-${item.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 20)}`}
                         className="flex items-center gap-3"
                         initial={{ opacity: 0, x: -10 }}
                         whileInView={{ opacity: 1, x: 0 }}
