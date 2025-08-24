@@ -6,6 +6,7 @@ import { FileText, MessageSquare, Sparkles, ArrowRight, PlayCircle, CheckCircle 
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef, useState } from 'react';
 import Logo from '@/components/Logo';
+import AnimatedAppDemo from '@/components/AnimatedAppDemo';
 
 export default function NotebookLMLanding() {
   const { isSignedIn } = useUser();
@@ -132,35 +133,73 @@ export default function NotebookLMLanding() {
         className="py-20 lg:py-32 relative overflow-hidden"
         style={{ y, opacity }}
       >
-        {/* Animated background elements */}
+        {/* Enhanced animated background elements */}
         <div className="absolute inset-0 -z-10">
           <motion.div 
-            className="absolute top-20 left-10 w-64 h-64 bg-amber-100/40 rounded-full blur-3xl opacity-30"
+            className="absolute top-20 left-10 w-64 h-64 bg-gradient-to-r from-amber-200/40 to-orange-200/40 rounded-full blur-3xl"
             animate={{ 
-              x: [0, 30, 0],
-              y: [0, -20, 0],
-              scale: [1, 1.1, 1]
+              x: [0, 50, 0],
+              y: [0, -30, 0],
+              scale: [1, 1.2, 1],
+              rotate: [0, 180, 360]
             }}
             transition={{ 
-              duration: 8,
+              duration: 12,
               repeat: Infinity,
               ease: "easeInOut"
             }}
           />
           <motion.div 
-            className="absolute bottom-20 right-10 w-80 h-80 bg-orange-100/40 rounded-full blur-3xl opacity-30"
+            className="absolute bottom-20 right-10 w-80 h-80 bg-gradient-to-l from-purple-200/30 to-pink-200/30 rounded-full blur-3xl"
             animate={{ 
-              x: [0, -40, 0],
-              y: [0, 30, 0],
-              scale: [1, 0.9, 1]
+              x: [0, -60, 0],
+              y: [0, 40, 0],
+              scale: [1, 0.8, 1],
+              rotate: [360, 180, 0]
             }}
             transition={{ 
-              duration: 10,
+              duration: 15,
               repeat: Infinity,
               ease: "easeInOut",
-              delay: 2
+              delay: 3
             }}
           />
+          <motion.div 
+            className="absolute top-1/2 left-1/2 w-96 h-96 bg-gradient-to-br from-blue-100/20 to-indigo-100/20 rounded-full blur-3xl"
+            animate={{ 
+              scale: [1, 1.3, 1],
+              rotate: [0, -180, -360]
+            }}
+            transition={{ 
+              duration: 20,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 1
+            }}
+          />
+          
+          {/* Floating particles */}
+          {Array.from({ length: 6 }).map((_, i) => (
+            <motion.div
+              key={`particle-${i}`}
+              className="absolute w-2 h-2 bg-gradient-to-r from-amber-400/60 to-orange-400/60 rounded-full"
+              style={{
+                left: `${20 + i * 15}%`,
+                top: `${30 + (i % 3) * 20}%`
+              }}
+              animate={{
+                y: [0, -20, 0],
+                x: [0, 10, 0],
+                opacity: [0.3, 1, 0.3]
+              }}
+              transition={{
+                duration: 4 + i,
+                repeat: Infinity,
+                delay: i * 0.8,
+                ease: "easeInOut"
+              }}
+            />
+          ))}
         </div>
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -270,12 +309,12 @@ export default function NotebookLMLanding() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
                 <FileText className="w-4 h-4 text-amber-600" />
-                <span className="font-medium">1 document</span>
+                <span className="font-medium">2 documents</span>
               </div>
               <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
               <div className="flex items-center gap-1">
                 <MessageSquare className="w-4 h-4 text-orange-600" />
-                <span className="font-medium">5 chat messages</span>
+                <span className="font-medium">10 chat messages</span>
               </div>
               <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
               <span className="text-gray-600">Free account required</span>
@@ -284,7 +323,7 @@ export default function NotebookLMLanding() {
         </div>
       </motion.section>
 
-      {/* Product Demo Section */}
+      {/* Interactive App Demos Section */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -295,197 +334,231 @@ export default function NotebookLMLanding() {
             transition={{ duration: 0.8 }}
           >
             <h2 className="text-3xl lg:text-4xl font-normal text-gray-900 mb-4">
-              See how it works
+              Experience PaperLM in action
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Watch these quick demos to understand PaperLM&apos;s core features
+              Interactive demos showing how PaperLM transforms document interaction
             </p>
           </motion.div>
 
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Video Player Mock */}
-            <motion.div
-              className="relative"
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
+          {/* Three Interactive Demos */}
+          <div className="space-y-20">
+            {/* Upload Demo */}
+            <motion.div 
+              className="grid lg:grid-cols-2 gap-12 items-center"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.2 }}
+              transition={{ duration: 0.8 }}
             >
-              <div className="relative bg-gradient-to-br from-purple-50/60 via-amber-50/50 to-orange-50/40 rounded-2xl p-8 border border-amber-200/30">
+              <div>
                 <motion.div
-                  className="bg-white rounded-xl shadow-lg overflow-hidden"
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 300 }}
+                  initial={{ opacity: 0, x: -30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, delay: 0.2 }}
                 >
-                  <div className="aspect-video bg-gradient-to-br from-gray-900 to-gray-800 relative flex items-center justify-center overflow-hidden rounded-t-xl">
-                    {isPlaying ? (
-                      /* Video Player */
-                      <div className="w-full h-full">
-                        <iframe
-                          src={`${demoVideos[activeVideo].videoUrl}?autoplay=1&background=1`}
-                          className="w-full h-full"
-                          frameBorder="0"
-                          allow="autoplay; fullscreen; picture-in-picture"
-                          allowFullScreen
-                          title={demoVideos[activeVideo].title}
-                        />
-                      </div>
-                    ) : (
-                      /* Preview with Play Button */
-                      <>
-                        {/* Simulated App Interface */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-purple-50/10 via-amber-50/10 to-orange-50/10">
-                          {activeVideo === 0 && (
-                            <div className="p-4 h-full flex flex-col">
-                              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 mb-3">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <div className="w-6 h-6 bg-amber-500/30 rounded"></div>
-                                  <div className="h-2 bg-white/20 rounded flex-1"></div>
-                                </div>
-                                <div className="h-1 bg-amber-500/50 rounded w-3/4"></div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 flex-1">
-                                <div className="bg-white/10 backdrop-blur-sm rounded"></div>
-                                <div className="bg-white/10 backdrop-blur-sm rounded"></div>
-                              </div>
-                            </div>
-                          )}
-                          {activeVideo === 1 && (
-                            <div className="p-4 h-full flex flex-col">
-                              <div className="flex gap-3 flex-1">
-                                <div className="flex-1 space-y-2">
-                                  <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 ml-auto w-3/4">
-                                    <div className="h-2 bg-white/30 rounded mb-1"></div>
-                                    <div className="h-2 bg-white/20 rounded w-2/3"></div>
-                                  </div>
-                                  <div className="bg-amber-500/20 backdrop-blur-sm rounded-lg p-2 w-4/5">
-                                    <div className="h-2 bg-amber-300/40 rounded mb-1"></div>
-                                    <div className="h-2 bg-amber-300/30 rounded w-3/4"></div>
-                                    <div className="h-2 bg-amber-300/30 rounded w-1/2 mt-1"></div>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 flex items-center gap-2">
-                                <div className="h-2 bg-white/20 rounded flex-1"></div>
-                                <div className="w-6 h-6 bg-amber-500/30 rounded"></div>
-                              </div>
-                            </div>
-                          )}
-                          {activeVideo === 2 && (
-                            <div className="p-4 h-full">
-                              <div className="space-y-2">
-                                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-4 h-4 bg-amber-500/30 rounded"></div>
-                                    <div className="h-2 bg-white/30 rounded w-1/3"></div>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <div className="h-1 bg-white/20 rounded w-full"></div>
-                                    <div className="h-1 bg-white/20 rounded w-4/5"></div>
-                                    <div className="h-1 bg-white/20 rounded w-3/5"></div>
-                                  </div>
-                                </div>
-                                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-4 h-4 bg-orange-500/30 rounded"></div>
-                                    <div className="h-2 bg-white/30 rounded w-2/5"></div>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <div className="h-1 bg-white/20 rounded w-full"></div>
-                                    <div className="h-1 bg-white/20 rounded w-3/4"></div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <motion.button
-                          className="relative z-10 w-16 h-16 bg-gradient-to-r from-orange-500 to-amber-600 rounded-full flex items-center justify-center text-white shadow-lg"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => handlePlayVideo(activeVideo)}
-                        >
-                          <PlayCircle className="w-8 h-8" />
-                        </motion.button>
-                        <div className="absolute bottom-4 left-4 bg-black/70 text-white px-3 py-1 rounded text-sm">
-                          {demoVideos[activeVideo].duration}
-                        </div>
-                      </>
-                    )}
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-medium mb-4">
+                    <FileText className="w-4 h-4" />
+                    <span>Document Upload</span>
                   </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-medium text-gray-900 mb-3">
-                      {demoVideos[activeVideo].title}
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                      {demoVideos[activeVideo].description}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {demoVideos[activeVideo].features.map((feature, index) => (
-                        <span key={index} className="px-2 py-1 bg-amber-50 text-amber-700 text-xs rounded-full">
-                          {feature}
-                        </span>
-                      ))}
-                    </div>
+                  <h3 className="text-2xl lg:text-3xl font-normal text-gray-900 mb-4">
+                    Upload and process documents instantly
+                  </h3>
+                  <p className="text-lg text-gray-600 mb-6">
+                    Drop any PDF, Word doc, or research paper. Our AI processes and indexes 
+                    your content in seconds, making it ready for intelligent conversation.
+                  </p>
+                  <div className="space-y-3">
+                    {[
+                      "Multi-format document support (PDF, DOCX, TXT)",
+                      "Intelligent text extraction and chunking",
+                      "OCR support for scanned documents",
+                      "Instant AI processing and indexing"
+                    ].map((feature, index) => (
+                      <motion.div
+                        key={index}
+                        className="flex items-center gap-3"
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
+                      >
+                        <div className="w-2 h-2 bg-gradient-to-r from-orange-500 to-amber-600 rounded-full"></div>
+                        <span className="text-gray-700">{feature}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              </div>
+              <motion.div
+                className="relative"
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+              >
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-2xl">
+                  <AnimatedAppDemo demoType="upload" autoPlay={true} />
+                </div>
+              </motion.div>
+            </motion.div>
+
+            {/* Chat Demo */}
+            <motion.div 
+              className="grid lg:grid-cols-2 gap-12 items-center"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              <motion.div
+                className="relative lg:order-1"
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+              >
+                <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-2xl">
+                  <AnimatedAppDemo demoType="chat" autoPlay={true} />
+                </div>
+              </motion.div>
+              <div className="lg:order-0">
+                <motion.div
+                  initial={{ opacity: 0, x: 30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, delay: 0.2 }}
+                >
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-4">
+                    <MessageSquare className="w-4 h-4" />
+                    <span>AI Chat Interface</span>
+                  </div>
+                  <h3 className="text-2xl lg:text-3xl font-normal text-gray-900 mb-4">
+                    Chat naturally with your documents
+                  </h3>
+                  <p className="text-lg text-gray-600 mb-6">
+                    Ask questions in plain English. Get detailed answers with precise 
+                    citations from your documents. It's like having a conversation with your research.
+                  </p>
+                  <div className="space-y-3">
+                    {[
+                      "Natural language question processing",
+                      "Contextual AI responses with citations",
+                      "Multi-document knowledge synthesis",
+                      "Follow-up question understanding"
+                    ].map((feature, index) => (
+                      <motion.div
+                        key={index}
+                        className="flex items-center gap-3"
+                        initial={{ opacity: 0, x: 20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
+                      >
+                        <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"></div>
+                        <span className="text-gray-700">{feature}</span>
+                      </motion.div>
+                    ))}
                   </div>
                 </motion.div>
               </div>
             </motion.div>
 
-            {/* Video List */}
-            <motion.div
-              className="space-y-4"
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
+            {/* Notes Demo */}
+            <motion.div 
+              className="grid lg:grid-cols-2 gap-12 items-center"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.4 }}
+              transition={{ duration: 0.8 }}
             >
-              {demoVideos.map((video, index) => (
-                <motion.button
-                  key={index}
-                  className={`w-full text-left p-6 rounded-xl border transition-all duration-300 ${
-                    activeVideo === index
-                      ? 'bg-amber-50/80 border-amber-200 shadow-md'
-                      : 'bg-white border-gray-200 hover:border-amber-200 hover:bg-amber-50/40'
-                  }`}
-                  onClick={() => {
-                    setActiveVideo(index);
-                    setIsPlaying(false); // Reset playing state when switching videos
-                  }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+              <div>
+                <motion.div
+                  initial={{ opacity: 0, x: -30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, delay: 0.2 }}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                      activeVideo === index
-                        ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      <PlayCircle className="w-6 h-6" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900 mb-1">{video.title}</h4>
-                      <p className="text-sm text-gray-600 mb-2">{video.description}</p>
-                      <div className="flex flex-wrap gap-1">
-                        {video.features.slice(0, 2).map((feature, fIndex) => (
-                          <span key={fIndex} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
-                            {feature}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="text-sm text-gray-500">{video.duration}</div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium mb-4">
+                    <Sparkles className="w-4 h-4" />
+                    <span>Smart Notes</span>
                   </div>
-                </motion.button>
-              ))}
+                  <h3 className="text-2xl lg:text-3xl font-normal text-gray-900 mb-4">
+                    Auto-generate insights and summaries
+                  </h3>
+                  <p className="text-lg text-gray-600 mb-6">
+                    Let AI automatically extract key insights, generate summaries, and organize 
+                    your findings into actionable notes with proper source citations.
+                  </p>
+                  <div className="space-y-3">
+                    {[
+                      "Automatic summary generation",
+                      "Key insight extraction",
+                      "Structured note organization",
+                      "Source citation tracking"
+                    ].map((feature, index) => (
+                      <motion.div
+                        key={index}
+                        className="flex items-center gap-3"
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
+                      >
+                        <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full"></div>
+                        <span className="text-gray-700">{feature}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              </div>
+              <motion.div
+                className="relative"
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+              >
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-2xl">
+                  <AnimatedAppDemo demoType="notes" autoPlay={true} />
+                </div>
+              </motion.div>
             </motion.div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-gradient-to-br from-purple-50/30 via-amber-50/20 to-orange-50/30">
+      <section id="features" className="py-20 bg-gradient-to-br from-purple-50/30 via-amber-50/20 to-orange-50/30 relative overflow-hidden">
+        {/* Background decorations */}
+        <div className="absolute inset-0 -z-10">
+          <motion.div 
+            className="absolute top-10 right-20 w-32 h-32 bg-gradient-to-br from-amber-300/20 to-orange-300/20 rounded-full blur-2xl"
+            animate={{ 
+              scale: [1, 1.3, 1],
+              rotate: [0, 360, 0]
+            }}
+            transition={{ 
+              duration: 25,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+          />
+          <motion.div 
+            className="absolute bottom-10 left-20 w-40 h-40 bg-gradient-to-tl from-purple-300/15 to-pink-300/15 rounded-full blur-2xl"
+            animate={{ 
+              scale: [1.2, 1, 1.2],
+              x: [0, 20, 0]
+            }}
+            transition={{ 
+              duration: 18,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+        </div>
+        
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div 
             className="text-center mb-16"
@@ -494,6 +567,16 @@ export default function NotebookLMLanding() {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
+            <motion.div
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-amber-200/50 rounded-full text-sm text-amber-800 mb-6"
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Powerful Features</span>
+            </motion.div>
             <h2 className="text-3xl lg:text-4xl font-normal text-gray-900 mb-4">
               Built for researchers and knowledge workers
             </h2>
@@ -713,11 +796,11 @@ export default function NotebookLMLanding() {
               <ul className="space-y-4 text-gray-700 mb-8">
                 <li className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                  <span>1 document upload</span>
+                  <span>2 document uploads</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                  <span>5 chat messages</span>
+                  <span>10 chat messages</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
