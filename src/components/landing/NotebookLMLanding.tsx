@@ -377,7 +377,7 @@ export default function NotebookLMLanding() {
                       "Instant AI processing and indexing"
                     ].map((feature, index) => (
                       <motion.div
-                        key={index}
+                        key={`feature-item-${index}`}
                         className="flex items-center gap-3"
                         initial={{ opacity: 0, x: -20 }}
                         whileInView={{ opacity: 1, x: 0 }}
@@ -449,7 +449,7 @@ export default function NotebookLMLanding() {
                       "Follow-up question understanding"
                     ].map((feature, index) => (
                       <motion.div
-                        key={index}
+                        key={`feature-item-${index}`}
                         className="flex items-center gap-3"
                         initial={{ opacity: 0, x: 20 }}
                         whileInView={{ opacity: 1, x: 0 }}
@@ -499,7 +499,7 @@ export default function NotebookLMLanding() {
                       "Source citation tracking"
                     ].map((feature, index) => (
                       <motion.div
-                        key={index}
+                        key={`feature-item-${index}`}
                         className="flex items-center gap-3"
                         initial={{ opacity: 0, x: -20 }}
                         whileInView={{ opacity: 1, x: 0 }}
@@ -610,7 +610,7 @@ export default function NotebookLMLanding() {
               }
             ].map((feature, index) => (
               <motion.div
-                key={index}
+                key={`feature-card-${index}`}
                 className="bg-white p-8 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -665,7 +665,7 @@ export default function NotebookLMLanding() {
                       "Multi-document knowledge synthesis"
                     ].map((item, index) => (
                       <motion.div
-                        key={index}
+                        key={`feature-item-${index}`}
                         className="flex items-center gap-3"
                         initial={{ opacity: 0, x: -10 }}
                         whileInView={{ opacity: 1, x: 0 }}
@@ -789,7 +789,10 @@ export default function NotebookLMLanding() {
             >
               <div className="mb-6">
                 <h3 className="text-2xl font-medium text-gray-900 mb-2">Free</h3>
-                <div className="text-4xl font-normal text-gray-900">$0</div>
+                <div className="flex flex-col">
+                  <span className="text-4xl font-normal text-gray-900">$0</span>
+                  <span className="text-lg text-gray-500">₹0</span>
+                </div>
                 <p className="text-gray-600 mt-2">Perfect for trying out PaperLM</p>
               </div>
 
@@ -840,11 +843,17 @@ export default function NotebookLMLanding() {
 
               <div className="mb-6">
                 <h3 className="text-2xl font-medium text-gray-900 mb-2">Pro</h3>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-normal text-gray-900">$9</span>
-                  <span className="text-lg text-gray-600">/month</span>
+                <div className="flex flex-col">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-normal text-gray-900">$5</span>
+                    <span className="text-lg text-gray-600">one-time</span>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-normal text-gray-500">₹415</span>
+                    <span className="text-sm text-gray-500">one-time</span>
+                  </div>
                 </div>
-                <p className="text-gray-600 mt-2">For researchers and professionals</p>
+                <p className="text-gray-600 mt-2">For researchers and professionals • Manual renewal</p>
               </div>
 
               <ul className="space-y-4 text-gray-700 mb-8">
@@ -876,7 +885,7 @@ export default function NotebookLMLanding() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  Start Pro trial
+                  Get Pro Access
                 </motion.button>
               </Link>
             </motion.div>
@@ -890,9 +899,14 @@ export default function NotebookLMLanding() {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <p className="text-sm text-gray-600">
-              All plans include data encryption, secure processing, and GDPR compliance
-            </p>
+            <div className="space-y-2">
+              <p className="text-sm text-gray-600">
+                All plans include data encryption, secure processing, and GDPR compliance
+              </p>
+              <p className="text-xs text-gray-500">
+                Pro plan is one-time payment with manual renewal • Prices: USD $5 / INR ₹415
+              </p>
+            </div>
           </motion.div>
         </div>
       </section>
