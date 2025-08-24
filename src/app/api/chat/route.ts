@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import { ConversationRepository, MessageRepository } from '@/lib/repositories/conversationRepository';
 import { UserRepository } from '@/lib/repositories/userRepository';
 import { SessionRepository } from '@/lib/repositories/sessionRepository';
+import { UserTrackingRepository } from '@/lib/repositories/userTrackingRepository';
 import { NextRequest, NextResponse } from 'next/server';
 import { Conversation } from '@/db/schema';
 
@@ -81,6 +82,17 @@ export async function POST(request: NextRequest) {
         sessionId: sessionId,
       },
     });
+
+    // Track user message if user is authenticated
+    if (user && newMessage) {
+      await UserTrackingRepository.saveUserMessage(
+        user.id,
+        sessionId,
+        message,
+        role
+      );
+      console.log('💬 User message tracked');
+    }
 
     if (!newMessage) {
       return NextResponse.json(

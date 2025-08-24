@@ -12,6 +12,8 @@ import {
   scrapeWithPuppeteer,
 } from '@/lib/urlScraping';
 import { getUserTypeFromId } from '@/lib/userIdGenerator';
+import { DocumentRepository } from '@/lib/repositories/documentRepository';
+import { UserRepository } from '@/lib/repositories/userRepository';
 
 type ScrapeBody = {
   url: string;
@@ -88,19 +90,15 @@ Transcript: ${transcript.slice(0, 15000)}${
 
 export async function POST(request: NextRequest) {
   try {
-    // Get authenticated user
+    // Get authenticated user (can be null for anonymous users)
     const { userId: clerkUserId } = await auth();
-    
-    if (!clerkUserId) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
 
     const body = (await request.json()) as ScrapeBody;
     const { url, type, maxDepth, sameOrigin, limit, loader, sessionId } = body || {};
     
-    // Determine user type and effective userId
-    const userId = sessionId || clerkUserId;
-    const userType = sessionId ? getUserTypeFromId(sessionId) : 'registered_free';
+    if (!sessionId) {
+      return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
+    }
     if (!url || !type) {
       return NextResponse.json(
         { success: false, error: 'URL and type are required' },
@@ -221,7 +219,90 @@ ${scraped.content}`;
       );
     }
 
-    const documentId = `web-${Date.now()}`;
+    // Get user if authenticated, or create anonymous user
+    let user = null;
+    let isAnonymousUser = false;
+    
+    if (clerkUserId) {
+      // Authenticated user
+      user = await UserRepository.findByClerkId(clerkUserId);
+      if (!user) {
+        user = await UserRepository.getOrCreate(clerkUserId, `${clerkUserId}@placeholder.local`);
+      }
+    } else {
+      // Anonymous user - create a temporary user record
+      isAnonymousUser = true;
+      const anonymousEmail = `anonymous-${sessionId}@temp.local`;
+      const anonymousClerkId = `anonymous-${sessionId}`;
+      
+      try {
+        // Try to find existing anonymous user for this session
+        user = await UserRepository.findByClerkId(anonymousClerkId);
+        if (!user) {
+          // Create new anonymous user
+          user = await UserRepository.getOrCreate(anonymousClerkId, anonymousEmail);
+          console.log(`👤 Created anonymous user for session: ${sessionId}`);
+        }
+      } catch (error) {
+        console.error('Failed to create anonymous user:', error);
+        return NextResponse.json({ error: 'Failed to create user session' }, { status: 500 });
+      }
+    }
+
+    // Create document record in database first
+    console.log('💾 Creating scraped document record in database...');
+    
+    // Generate proper UUID for anonymous users if no authenticated user
+    let anonymousUserId = user?.id;
+    if (!anonymousUserId) {
+      const sessionStr = sessionId || userId || 'anonymous';
+      // Convert sessionId to a consistent hash and format as UUID
+      let hash = 0;
+      for (let i = 0; i < sessionStr.length; i++) {
+        const char = sessionStr.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
+      }
+      const hashHex = Math.abs(hash).toString(16).padStart(8, '0').substring(0, 8);
+      const randomHex = Math.random().toString(16).substring(2, 6);
+      anonymousUserId = `00000000-0000-4000-8000-${hashHex}${randomHex}`;
+    }
+    
+    if (!user?.id) {
+      console.error('❌ No user ID available for document creation');
+      return NextResponse.json({ error: 'User session not available' }, { status: 500 });
+    }
+
+    const newDocument = await DocumentRepository.create({
+      userId: user.id,
+      sessionId: sessionId,
+      name: scraped.title || 'Website Content',
+      content: scraped.content,
+      fileType: fileType,
+      fileSize: scraped.content.length,
+      status: 'processing',
+      sourceUrl: url,
+      metadata: {
+        ...scraped.metadata,
+        scrapeType: type,
+        userType: isAnonymousUser ? 'anonymous' : 'registered_free',
+        isAnonymous: isAnonymousUser,
+      },
+    });
+
+    if (!newDocument) {
+      console.log('❌ Failed to create document record in database');
+      return NextResponse.json({ error: 'Failed to create document record' }, { status: 500 });
+    }
+
+    console.log('✅ Scraped document record created:', {
+      documentId: newDocument.id,
+      status: newDocument.status,
+      name: newDocument.name,
+      sourceUrl: url
+    });
+
+    const documentId = newDocument.id; // Use the database ID
     const chunks = await chunkDocument(documentId, scraped.content);
 
     const docs = chunks.map((chunk) => ({
@@ -235,9 +316,9 @@ ${scraped.content}`;
         fileName: scraped!.title || 'Website',
         fileType,
         fileSize: scraped!.content.length,
-        sessionId: sessionId || clerkUserId,
-        userId: userId,
-        userType: userType as 'registered_free' | 'session' | 'temporary' | 'unknown',
+        sessionId: sessionId,
+        userId: user.id,
+        userType: isAnonymousUser ? 'anonymous' : 'registered_free',
         sourceUrl: url,
         loader:
           typeof scraped!.metadata?.loader === 'string'
@@ -251,6 +332,19 @@ ${scraped.content}`;
     }));
 
     await addDocuments(docs);
+
+    // Update document status to ready
+    console.log(`📝 Updating scraped document ${documentId} to ready status with ${chunks.length} chunks`);
+    const updatedDocument = await DocumentRepository.updateProcessingResults(documentId, {
+      chunksCount: chunks.length,
+      qdrantCollectionId: 'paperlm_documents',
+    });
+    
+    if (updatedDocument) {
+      console.log(`✅ Scraped document ${documentId} updated successfully, status: ${updatedDocument.status}`);
+    } else {
+      console.error(`❌ Failed to update scraped document ${documentId} status`);
+    }
 
     return NextResponse.json({
       success: true,

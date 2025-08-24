@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { SessionRepository } from '@/lib/repositories/sessionRepository';
 import { UserRepository } from '@/lib/repositories/userRepository';
+import { UserTrackingRepository } from '@/lib/repositories/userTrackingRepository';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
@@ -26,6 +27,10 @@ export async function POST(request: NextRequest) {
             userId: user.id,
             userAgent: request.headers.get('user-agent') || '',
           });
+
+          // Track user session activity
+          await UserTrackingRepository.trackSessionActivity(user.id, sessionId, 'chat');
+          console.log('📊 Session activity tracked for user:', user.id);
         }
       } else {
         // For anonymous users

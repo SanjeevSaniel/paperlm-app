@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { DocumentRepository } from '@/lib/repositories/documentRepository';
 import { UserRepository } from '@/lib/repositories/userRepository';
+import { deleteDocumentFromQdrant } from '@/lib/qdrant';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Use the Document type from schema instead of defining our own
@@ -19,14 +20,16 @@ export async function GET(request: NextRequest) {
     let documents: Document[] = [];
 
     if (userId) {
-      // For authenticated users, get user and their documents for this session
+      // For authenticated users, get ALL their documents across all sessions
       const user = await UserRepository.findByClerkId(userId);
       if (user) {
-        documents = await DocumentRepository.findByUserAndSession(user.id, sessionId);
+        documents = await DocumentRepository.findByUserId(user.id);
+        console.log(`📄 Found ${documents.length} documents for user ${user.id}`);
       }
     } else {
       // For anonymous users, get documents by session only
       documents = await DocumentRepository.findBySessionId(sessionId);
+      console.log(`📄 Found ${documents.length} documents for session ${sessionId}`);
     }
 
     // Transform documents to match frontend expectations
@@ -89,13 +92,23 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
-    // Delete the document
+    // Delete the document from database
     const deleted = await DocumentRepository.delete(documentId);
     if (!deleted) {
-      return NextResponse.json({ error: 'Failed to delete document' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to delete document from database' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    // Delete from vector database (Qdrant) as well
+    const qdrantDeleted = await deleteDocumentFromQdrant(documentId);
+    if (!qdrantDeleted) {
+      console.warn('Failed to delete document from vector database, but database deletion succeeded');
+    }
+
+    return NextResponse.json({ 
+      success: true,
+      vectorDeleted: qdrantDeleted,
+      message: `Document deleted successfully${!qdrantDeleted ? ' (vector deletion failed)' : ''}`
+    });
   } catch (error) {
     console.error('Document delete error:', error);
     return NextResponse.json(

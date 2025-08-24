@@ -1,5 +1,5 @@
-import connectDB from '@/lib/mongodb';
-import User from '@/models/User';
+import { UserRepository } from '@/lib/repositories/userRepository';
+import { UserTrackingRepository } from '@/lib/repositories/userTrackingRepository';
 import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { Webhook } from 'svix';
@@ -67,48 +67,86 @@ export async function POST(request: NextRequest) {
   const eventType = evt.type;
 
   try {
-    await connectDB();
-
     if (eventType === 'user.created') {
-      const { id, email_addresses, first_name, last_name } = evt.data;
+      const { id, email_addresses, first_name, last_name, image_url } = evt.data;
+      
+      console.log('🔥 User signup detected:', id);
 
-      const user = new User({
-        clerkId: id,
-        email: email_addresses[0]?.email_address || '',
-        firstName: first_name,
-        lastName: last_name,
-      });
+      const user = await UserRepository.getOrCreate(
+        id,
+        email_addresses[0]?.email_address || `${id}@placeholder.local`,
+        {
+          firstName: first_name || null,
+          lastName: last_name || null,
+          profileImageUrl: image_url || null,
+          emailVerified: email_addresses[0]?.verification?.status === 'verified' || false,
+          lastLoginAt: new Date(),
+        }
+      );
 
-      await user.save();
-      console.log('User created in MongoDB:', id);
+      if (user) {
+        console.log('✅ User created in NeonDB:', id, user.email);
+        // Track user signup
+        await UserTrackingRepository.trackUserSignin(user.id);
+        console.log('🎉 User signup tracked');
+      } else {
+        console.error('❌ Failed to create user in NeonDB:', id);
+      }
     }
 
     if (eventType === 'user.updated') {
-      const { id, email_addresses, first_name, last_name } = evt.data;
+      const { id, email_addresses, first_name, last_name, image_url } = evt.data;
 
-      await User.findOneAndUpdate(
-        { clerkId: id },
-        {
-          email: email_addresses[0]?.email_address || '',
-          firstName: first_name,
-          lastName: last_name,
-        },
-        { upsert: true },
-      );
+      console.log('🔄 User update detected:', id);
 
-      console.log('User updated in MongoDB:', id);
+      const updatedUser = await UserRepository.update(id, {
+        email: email_addresses[0]?.email_address || `${id}@placeholder.local`,
+        firstName: first_name || null,
+        lastName: last_name || null,
+        profileImageUrl: image_url || null,
+        emailVerified: email_addresses[0]?.verification?.status === 'verified' || false,
+      });
+
+      if (updatedUser) {
+        console.log('✅ User updated in NeonDB:', id, updatedUser.email);
+      } else {
+        console.error('❌ Failed to update user in NeonDB:', id);
+      }
     }
 
     if (eventType === 'user.deleted') {
       const { id } = evt.data;
 
-      await User.findOneAndDelete({ clerkId: id });
-      console.log('User deleted from MongoDB:', id);
+      console.log('🗑️ User deletion detected:', id);
+
+      // Note: We may want to soft-delete or keep user data for compliance
+      // For now, we'll just log this event
+      console.log('User deletion logged for:', id);
+    }
+
+    if (eventType === 'session.created') {
+      const { user_id } = evt.data;
+      console.log('🔐 User signin detected:', user_id);
+      
+      // Update last login time and track signin
+      if (user_id) {
+        await UserRepository.update(user_id as string, {
+          lastLoginAt: new Date(),
+        });
+        
+        // Also track in user tracking system
+        const user = await UserRepository.findByClerkId(user_id as string);
+        if (user) {
+          await UserTrackingRepository.trackUserSignin(user.id);
+        }
+        
+        console.log('✅ User signin tracked for:', user_id);
+      }
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Webhook processing error:', error);
+    console.error('❌ Webhook processing error:', error);
     return NextResponse.json(
       { error: 'Webhook processing failed' },
       { status: 500 },

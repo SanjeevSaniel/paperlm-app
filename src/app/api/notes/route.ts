@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import { NotesRepository } from '@/lib/repositories/notesRepository';
 import { UserRepository } from '@/lib/repositories/userRepository';
 import { SessionRepository } from '@/lib/repositories/sessionRepository';
+import { UserTrackingRepository } from '@/lib/repositories/userTrackingRepository';
 import { NextRequest, NextResponse } from 'next/server';
 import { Note } from '@/db/schema';
 
@@ -40,6 +41,9 @@ export async function POST(request: NextRequest) {
     // Update session tracking
     if (user) {
       await SessionRepository.incrementNoteCount(sessionId);
+      // Also track in user tracking repository
+      await UserTrackingRepository.saveUserNote(user.id, sessionId, content, title);
+      console.log('📝 User note tracked');
     }
 
     return NextResponse.json({
