@@ -423,8 +423,8 @@ export default function NotebookLMLanding() {
                   </h3>
                   <p className='text-lg text-gray-600 mb-6'>
                     Ask questions in plain English. Get detailed answers with
-                    precise citations from your documents. It&apos;s like having a
-                    conversation with your research.
+                    precise citations from your documents. It&apos;s like having
+                    a conversation with your research.
                   </p>
                   <div className='space-y-3'>
                     {[
