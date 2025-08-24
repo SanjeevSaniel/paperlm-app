@@ -777,7 +777,7 @@ export default function NotebookLMLanding() {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+          <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-6 max-w-7xl mx-auto">
             {/* Free Plan */}
             <motion.div
               className="bg-white p-8 rounded-2xl border border-gray-200 hover:border-gray-300 transition-all duration-300"
@@ -846,14 +846,14 @@ export default function NotebookLMLanding() {
                 <div className="flex flex-col">
                   <div className="flex items-baseline gap-1">
                     <span className="text-4xl font-normal text-gray-900">$5</span>
-                    <span className="text-lg text-gray-600">one-time</span>
+                    <span className="text-lg text-gray-600">/month</span>
                   </div>
                   <div className="flex items-baseline gap-1">
                     <span className="text-2xl font-normal text-gray-500">₹415</span>
-                    <span className="text-sm text-gray-500">one-time</span>
+                    <span className="text-sm text-gray-500">/month</span>
                   </div>
                 </div>
-                <p className="text-gray-600 mt-2">For researchers and professionals • Manual renewal</p>
+                <p className="text-gray-600 mt-2">For researchers and professionals • Cancel anytime</p>
               </div>
 
               <ul className="space-y-4 text-gray-700 mb-8">
@@ -885,7 +885,65 @@ export default function NotebookLMLanding() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  Get Pro Access
+                  Start Pro Monthly
+                </motion.button>
+              </Link>
+            </motion.div>
+
+            {/* Credits Plan */}
+            <motion.div
+              className="bg-white p-8 rounded-2xl border border-blue-200 hover:border-blue-300 transition-all duration-300"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              whileHover={{ y: -5 }}
+            >
+              <div className="mb-6">
+                <h3 className="text-2xl font-medium text-gray-900 mb-2">Credits</h3>
+                <div className="flex flex-col">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-normal text-gray-900">$0.10</span>
+                    <span className="text-lg text-gray-600">per message</span>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-normal text-gray-500">₹8.30</span>
+                    <span className="text-sm text-gray-500">per message</span>
+                  </div>
+                </div>
+                <p className="text-gray-600 mt-2">Pay only for what you use • No monthly fees</p>
+              </div>
+
+              <ul className="space-y-4 text-gray-700 mb-8">
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                  <span>Unlimited documents</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                  <span>Pay per message sent</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                  <span>Advanced AI analysis</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                  <span>Credit bundles available</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                  <span>No expiry on credits</span>
+                </li>
+              </ul>
+
+              <Link href="/sign-up">
+                <motion.button 
+                  className="w-full px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-medium"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Buy Credits
                 </motion.button>
               </Link>
             </motion.div>
@@ -904,7 +962,7 @@ export default function NotebookLMLanding() {
                 All plans include data encryption, secure processing, and GDPR compliance
               </p>
               <p className="text-xs text-gray-500">
-                Pro plan is one-time payment with manual renewal • Prices: USD $5 / INR ₹415
+                Pro: $5/month • Credits: $0.10/message • Cancel anytime • No setup fees
               </p>
             </div>
           </motion.div>
@@ -947,7 +1005,7 @@ export default function NotebookLMLanding() {
           
           {/* Copyright */}
           <div className="mt-8 pt-6 border-t border-gray-100 text-center text-sm text-gray-500">
-            © 2024 PaperLM
+            © 2025 PaperLM
           </div>
         </div>
       </footer>
