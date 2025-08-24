@@ -48,7 +48,7 @@ export default function UserMenu({ children }: NotionUserMenuProps) {
     useUserMenuStore();
   const { formData, setFormData, hasChanges, saveForm, resetForm } =
     useProfileFormStore();
-  const { theme, setTheme, emailNotifications, setEmailNotifications } =
+  const { theme, setTheme, emailNotifications, setEmailNotifications, savePreferences } =
     useAppPreferencesStore();
 
   const userLimits = authData.user?.usage || {
@@ -318,9 +318,15 @@ export default function UserMenu({ children }: NotionUserMenuProps) {
                   <span className='text-sm text-gray-700'>Theme</span>
                   <select
                     value={theme}
-                    onChange={(e) =>
-                      setTheme(e.target.value as 'light' | 'dark' | 'system')
-                    }
+                    onChange={async (e) => {
+                      const newTheme = e.target.value as 'light' | 'dark' | 'system';
+                      setTheme(newTheme);
+                      try {
+                        await savePreferences();
+                      } catch (error) {
+                        console.error('Failed to save theme preference:', error);
+                      }
+                    }}
                     className='px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white text-gray-900 min-w-[100px]'>
                     <option value='light'>Light</option>
                     <option value='dark'>Dark</option>
@@ -422,7 +428,14 @@ export default function UserMenu({ children }: NotionUserMenuProps) {
                     <input
                       type='checkbox'
                       checked={emailNotifications}
-                      onChange={(e) => setEmailNotifications(e.target.checked)}
+                      onChange={async (e) => {
+                        setEmailNotifications(e.target.checked);
+                        try {
+                          await savePreferences();
+                        } catch (error) {
+                          console.error('Failed to save notification preference:', error);
+                        }
+                      }}
                       className='w-4 h-4 text-orange-600'
                     />
                   </div>
@@ -491,9 +504,17 @@ export default function UserMenu({ children }: NotionUserMenuProps) {
                     : 'Limited to 5 documents and 10 chats per month'}
                 </p>
                 {!isPro && (
-                  <button className='w-full px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 text-sm font-medium'>
+                  <motion.button 
+                    onClick={() => {
+                      closeMenu();
+                      window.location.href = '/subscription';
+                    }}
+                    className='w-full px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 text-sm font-medium transition-colors'
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
                     Upgrade to Pro
-                  </button>
+                  </motion.button>
                 )}
               </div>
 
@@ -591,9 +612,17 @@ export default function UserMenu({ children }: NotionUserMenuProps) {
                 <p className='text-sm text-gray-500 mb-4'>
                   Usage analytics are available with Pro plan
                 </p>
-                <button className='px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 text-sm font-medium'>
+                <motion.button 
+                  onClick={() => {
+                    closeMenu();
+                    window.location.href = '/subscription';
+                  }}
+                  className='px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 text-sm font-medium transition-colors'
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
                   Upgrade to Pro
-                </button>
+                </motion.button>
               </div>
             )}
           </motion.div>

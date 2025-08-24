@@ -10,6 +10,21 @@ export interface ExtendedDocument extends Document {
 }
 
 /**
+ * Temporary document interface for instant feedback during uploads
+ */
+export interface TempDocument {
+  id: string;
+  name: string;
+  type: 'file' | 'website' | 'youtube';
+  size: string;
+  status: 'uploading' | 'processing' | 'ready' | 'error';
+  chunksCount: number;
+  uploadedAt: Date;
+  sourceUrl?: string;
+  fileType?: string;
+}
+
+/**
  * Document upload handlers interface
  */
 export interface DocumentUploadHandlers {
