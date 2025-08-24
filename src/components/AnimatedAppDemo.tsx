@@ -181,7 +181,7 @@ const AnimatedAppDemo: React.FC<AnimatedAppDemoProps> = ({ demoType, autoPlay = 
                 { icon: Search, text: "Search within document", color: "bg-green-100 text-green-700" }
               ].map((action, index) => (
                 <motion.div
-                  key={index}
+                  key={`action-${action.text.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 15)}`}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.2 }}
@@ -440,7 +440,7 @@ const AnimatedAppDemo: React.FC<AnimatedAppDemoProps> = ({ demoType, autoPlay = 
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-1">
         {Array.from({ length: demoType === 'notes' ? 3 : 4 }).map((_, index) => (
           <motion.div
-            key={index}
+            key={`${demoType}-progress-${index}`}
             className={`w-2 h-2 rounded-full ${index <= currentStep ? 'bg-white' : 'bg-white/30'}`}
             animate={{ scale: index === currentStep ? 1.2 : 1 }}
             transition={{ duration: 0.2 }}
