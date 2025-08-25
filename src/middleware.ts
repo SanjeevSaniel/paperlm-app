@@ -11,7 +11,11 @@ const isPublicRoute = createRouteMatcher([
   '/help',
   '/contact',
   '/api/cleanup', // Public cleanup endpoint
-  '/api/test-neon' // Public test endpoint
+  '/api/test-neon', // Public test endpoint
+  '/api/upload', // Public upload endpoint for anonymous users
+  '/api/documents', // Public documents endpoint for anonymous users
+  '/api/scrape', // Public scrape endpoint for anonymous users
+  '/api/chat' // Public chat endpoint for anonymous users
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

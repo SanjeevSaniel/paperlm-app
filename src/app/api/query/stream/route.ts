@@ -1,43 +1,14 @@
 export const runtime = 'nodejs';
 
-import { streamAIResponse, generateQueryVariations } from '@/lib/ai';
+import { streamAIResponse } from '@/lib/ai';
 import type { RAGResult } from '@/lib/qdrant';
-import { similaritySearch } from '@/lib/qdrant';
+import { searchWithUserContext, checkQdrantHealth } from '@/lib/improvedVectorSearch';
+import { rewriteContext } from '@/lib/advancedRag';
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 
-// Function to select adjacent chunks for better context continuity
-function selectAdjacentChunks(chunks: RAGResult[]): RAGResult[] {
-  if (chunks.length <= 3) return chunks;
-
-  // Find the best starting chunk (usually the first or most relevant)
-  const startChunk = chunks[0];
-  const selected = [startChunk];
-
-  // Try to add adjacent chunks
-  const currentIndex = startChunk.metadata.chunkIndex;
-
-  // Add next chunk if available
-  const nextChunk = chunks.find(
-    (c) => c.metadata.chunkIndex === currentIndex + 1,
-  );
-  if (nextChunk) selected.push(nextChunk);
-
-  // Add previous chunk if available
-  const prevChunk = chunks.find(
-    (c) => c.metadata.chunkIndex === currentIndex - 1,
-  );
-  if (prevChunk) selected.unshift(prevChunk);
-
-  // Add any remaining high-relevance chunks (first few from the sorted list)
-  const remaining = chunks.filter((c) => !selected.includes(c)).slice(0, 2);
-  selected.push(...remaining);
-
-  return selected.slice(0, 5); // Limit to 5 chunks per document
-}
-
 /**
- * Streaming query endpoint using Vercel AI SDK with RAG context
+ * Improved streaming query endpoint with advanced RAG
  */
 export async function POST(request: NextRequest) {
   try {
@@ -66,29 +37,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Enhanced multi-query search for better context retrieval with storage isolation
-    const primaryResults = await similaritySearch(message, 20, storageId);
+    // Check Qdrant health
+    const health = await checkQdrantHealth();
+    console.log('🏥 Qdrant health:', {
+      connected: health.connected,
+      collectionExists: health.collectionExists,
+      documentCount: health.documentCount,
+      error: health.error
+    });
 
-    // Generate query variations to capture different semantic angles
-    const queryVariations = await generateQueryVariations(message, chatHistory);
-    const enhancedResults = await Promise.all(
-      queryVariations.map((variation) =>
-        similaritySearch(variation, 10, storageId),
-      ),
-    );
+    // Enhanced search with advanced RAG techniques
+    const results = await searchWithUserContext(message, storageId, {
+      k: 20,
+      chatHistory,
+    });
 
-    // Combine and deduplicate results
-    const allResults = [...primaryResults, ...enhancedResults.flat()];
-
-    // Remove duplicates based on chunkId and sort by relevance
-    const uniqueResults = Array.from(
-      new Map(
-        allResults.map((result) => [result.metadata.chunkId, result]),
-      ).values(),
-    );
-
-    // Filter results by minimum similarity threshold (if using Qdrant scores)
-    const results = uniqueResults.slice(0, 25); // Increased from 15 to 25
+    console.log(`📚 Advanced RAG found ${results.length} context results for: "${message}"`);
 
     if (!results || results.length === 0) {
       return new Response(
@@ -101,143 +65,117 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build enhanced context with intelligent chunk selection
-    const contextChunks: string[] = [];
-    let totalChars = 0;
-    const maxChars = 12000; // Doubled context window for better coverage
-
-    // Group results by document for better context coherence
-    const documentGroups = new Map<string, RAGResult[]>();
-    results.forEach((result) => {
-      const docId = result.metadata.documentId;
-      if (!documentGroups.has(docId)) {
-        documentGroups.set(docId, []);
-      }
-      documentGroups.get(docId)!.push(result);
+    // Use advanced context rewriting
+    const chunks = results.slice(0, 12).map(r => r.pageContent);
+    const contextResult = await rewriteContext(chunks, message, 10000);
+    
+    console.log(`🔄 Context rewritten:`, {
+      originalChunks: chunks.length,
+      rewrittenLength: contextResult.rewrittenContext.length,
+      relevanceScore: contextResult.relevanceScore,
+      summaryLength: contextResult.condensedSummary.length
     });
 
-    // Sort document groups by relevance (based on first result's position)
-    const sortedDocGroups = Array.from(documentGroups.entries()).sort(
-      ([, a], [, b]) => {
-        const aIndex = results.findIndex(
-          (r) => r.metadata.documentId === a[0].metadata.documentId,
-        );
-        const bIndex = results.findIndex(
-          (r) => r.metadata.documentId === b[0].metadata.documentId,
-        );
-        return aIndex - bIndex;
-      },
-    );
+    // Build enhanced context
+    const context = contextResult.rewrittenContext || chunks.join('\n\n').slice(0, 8000);
 
-    // Priority 1: Text input chunks (highest priority)
-    const textInputResults = results.filter(
-      (r) => r.metadata.fileName === 'text-input.txt',
-    );
-    for (const result of textInputResults) {
-      if (totalChars >= maxChars) break;
-      const content = (result.pageContent || '').trim();
-      if (!content) continue;
-
-      const source = '[TEXT INPUT]';
-      const contextPiece = `${source} ${content}`;
-
-      if (totalChars + contextPiece.length + 50 <= maxChars) {
-        contextChunks.push(contextPiece);
-        totalChars += contextPiece.length + 50;
-      }
-    }
-
-    // Priority 2: Process document groups with adjacent chunks for better context
-    for (const [, docResults] of sortedDocGroups) {
-      if (totalChars >= maxChars) break;
-
-      // Skip text input as already processed
-      if (docResults[0]?.metadata.fileName === 'text-input.txt') continue;
-
-      // Sort chunks by position within document
-      const sortedChunks = docResults.sort(
-        (a, b) => a.metadata.chunkIndex - b.metadata.chunkIndex,
-      );
-
-      // Try to include adjacent chunks for better context continuity
-      const selectedChunks = selectAdjacentChunks(sortedChunks);
-
-      for (const result of selectedChunks) {
-        if (totalChars >= maxChars) break;
-
-        const content = (result.pageContent || '').trim();
-        if (!content) continue;
-
-        // Use longer chunks (1200 instead of 800) for better context
-        const chunk =
-          content.length > 1200 ? content.slice(0, 1200) + '...' : content;
-        const source = `[${result.metadata.fileName}]`;
-        const chunkInfo = `[Chunk ${result.metadata.chunkIndex + 1}]`;
-        const contextPiece = `${source} ${chunkInfo} ${chunk}`;
-
-        if (totalChars + contextPiece.length + 50 <= maxChars) {
-          contextChunks.push(contextPiece);
-          totalChars += contextPiece.length + 50;
+    // Create citations with improved metadata
+    const citations = results.slice(0, 8).map((result) => {
+      const fileName = result.metadata.fileName || 'Unknown Document';
+      const isTextInput = fileName === 'text-input.txt';
+      
+      return {
+        source: isTextInput ? 'Text Input' : fileName,
+        content: result.pageContent.slice(0, 200) + (result.pageContent.length > 200 ? '...' : ''),
+        metadata: {
+          documentId: result.metadata.documentId,
+          chunkIndex: result.metadata.chunkIndex,
+          fileName: fileName,
+          confidence: result.metadata.confidence || 0,
+          relevanceScore: contextResult.relevanceScore,
         }
-      }
-    }
+      };
+    });
 
-    const context = contextChunks.join('\n\n');
+    // Build message array for AI with enhanced context
+    const systemMessage = `You are an expert AI assistant with access to relevant documents. Use the provided context to answer questions accurately and comprehensively.
 
-    // Build message array for AI generation
+Context Information (Relevance Score: ${contextResult.relevanceScore.toFixed(2)}):
+${context}
+
+Instructions:
+1. Answer based primarily on the provided context
+2. If the context doesn't contain sufficient information, clearly state this
+3. Cite specific information from the context when possible
+4. Be concise but thorough
+5. If context quality is low (relevance < 0.3), acknowledge this limitation
+
+Context Summary: ${contextResult.condensedSummary}`;
+
     const messages = [
-      ...chatHistory.slice(-6), // Keep last 6 messages for context
+      { role: 'system' as const, content: systemMessage },
+      ...chatHistory.slice(-5), // Keep last 5 messages for better context
       { role: 'user' as const, content: message },
     ];
 
-    // Stream AI response with context
+    console.log(`🤖 Generating AI response with context length: ${context.length} chars`);
+
+    // Detect task type based on query content for optimal model selection
+    const detectTaskType = (query: string): 'reasoning' | 'creative' | 'factual' | 'fast' => {
+      const queryLower = query.toLowerCase();
+      
+      // Complex reasoning indicators
+      if (queryLower.includes('analyze') || queryLower.includes('compare') || 
+          queryLower.includes('explain why') || queryLower.includes('reasoning') ||
+          queryLower.includes('logic') || queryLower.includes('cause') ||
+          queryLower.includes('conclude') || queryLower.includes('infer')) {
+        return 'reasoning';
+      }
+      
+      // Creative task indicators  
+      if (queryLower.includes('write') || queryLower.includes('create') ||
+          queryLower.includes('generate') || queryLower.includes('draft') ||
+          queryLower.includes('compose') || queryLower.includes('story')) {
+        return 'creative';
+      }
+      
+      // Fast response indicators
+      if (queryLower.includes('quick') || queryLower.includes('brief') ||
+          queryLower.includes('summary') || queryLower.includes('list') ||
+          query.length < 50) {
+        return 'fast';
+      }
+      
+      // Default to factual for document-based queries
+      return 'factual';
+    };
+
+    const taskType = detectTaskType(message);
+    
+    console.log(`🎯 Detected task type: ${taskType} for query: "${message.slice(0, 50)}..."`);
+
+    // Stream AI response with advanced model selection and optimized parameters
     const streamResponse = await streamAIResponse(messages, context, {
-      temperature: 0.3,
-      maxTokens: 2000,
+      taskType,
+      temperature: taskType === 'reasoning' ? 0.1 : taskType === 'creative' ? 0.6 : 0.2,
+      maxTokens: taskType === 'reasoning' ? 4000 : taskType === 'fast' ? 1500 : 3000,
+      topP: 0.9,
+      frequencyPenalty: 0.3,
+      presencePenalty: 0.1,
+      citations,
     });
 
-    // Create single most relevant citation for client
-    const citations = [];
-    if (results.length > 0) {
-      const topResult = results[0];
-      const citation = {
-        id: `citation-${topResult.metadata.chunkId}`,
-        documentId: topResult.metadata.documentId,
-        documentName: topResult.metadata.fileName || 'Unknown Document',
-        documentType: topResult.metadata.fileType || 'text/plain',
-        sourceUrl: topResult.metadata.sourceUrl,
-        chunkId: topResult.metadata.chunkId,
-        chunkIndex: topResult.metadata.chunkIndex || 0,
-        content:
-          topResult.pageContent.length > 200
-            ? topResult.pageContent.slice(0, 200) + '...'
-            : topResult.pageContent,
-        fullContent: topResult.pageContent,
-        relevanceScore: 0.95,
-        uploadedAt: topResult.metadata.uploadedAt || new Date().toISOString(),
-        isTextInput: topResult.metadata.fileName === 'text-input.txt',
-        author:
-          'author' in topResult.metadata
-            ? (topResult.metadata.author as string)
-            : undefined,
-        publishedAt:
-          'publishedAt' in topResult.metadata
-            ? (topResult.metadata.publishedAt as string)
-            : undefined,
-      };
-      citations.push(citation);
-    }
-
-    // Set up response headers for streaming with metadata
+    // Enhanced response headers
     const headers = new Headers({
       'Content-Type': 'text/plain; charset=utf-8',
       'Transfer-Encoding': 'chunked',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
-      'X-Citations': JSON.stringify(citations),
-      'X-Context': 'true',
-      'X-Search-Results': results.length.toString(),
-      'X-Text-Input-Chunks': textInputResults.length.toString(),
+      'X-Context-Length': context.length.toString(),
+      'X-Results-Count': results.length.toString(),
+      'X-Relevance-Score': contextResult.relevanceScore.toFixed(3),
+      'X-Citations-Count': citations.length.toString(),
+      'X-Qdrant-Health': health.connected ? 'healthy' : 'degraded',
     });
 
     return new Response(streamResponse.body, {
@@ -246,9 +184,22 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Streaming query processing error:', error);
+    console.error('❌ Advanced streaming query error:', error);
+    
+    // Enhanced error logging
+    const errorDetails = {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    };
+    
+    console.error('Error details:', errorDetails);
+
     return new Response(
-      JSON.stringify({ error: 'Failed to process streaming query' }),
+      JSON.stringify({ 
+        error: 'Failed to process query with advanced RAG system',
+        details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
+      }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

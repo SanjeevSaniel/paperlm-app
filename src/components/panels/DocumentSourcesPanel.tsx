@@ -3,6 +3,8 @@
 import DocumentUploadArea from '../documents/DocumentUploadArea';
 import DocumentList from '../documents/DocumentList';
 import { useDocuments } from '../documents/useDocuments';
+import { Button } from '@/components/ui/Button';
+import { RefreshCw } from 'lucide-react';
 
 /**
  * DocumentSourcesPanel manages document uploads and display
@@ -23,15 +25,29 @@ export default function DocumentSourcesPanel() {
     handleTextSubmit,
     handleUrlSubmit,
     removeDocument,
+    refreshDocuments,
+    setDocuments,
   } = useDocuments();
 
   return (
     <div className='h-full flex flex-col'>
       {/* Header */}
       <div className='px-4 py-3 border-b border-gray-100 bg-slate-50/30 flex-shrink-0'>
-        <p className='text-sm text-gray-600'>
-          Upload and manage your documents
-        </p>
+        <div className='flex items-center justify-between'>
+          <p className='text-sm font-medium text-gray-700'>
+            Documents ({documents.length})
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refreshDocuments}
+            disabled={isLoading}
+            className="h-8 px-2"
+            title="Refresh documents"
+          >
+            <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
       </div>
 
       {/* Content */}
@@ -48,6 +64,7 @@ export default function DocumentSourcesPanel() {
           documents={documents}
           isLoading={isLoading}
           onDeleteDocument={removeDocument}
+          setDocuments={setDocuments}
         />
       </div>
     </div>

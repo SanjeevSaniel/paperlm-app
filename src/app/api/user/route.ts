@@ -10,11 +10,33 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get or create user using NeonDB
-    const placeholderEmail = `${userId}@placeholder.local`;
-    const user = await UserRepository.getOrCreate(userId, placeholderEmail);
+    // Get Clerk user data for more complete user creation
+    let clerkUser = null;
+    try {
+      const { createClerkClient } = await import('@clerk/backend');
+      const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+      clerkUser = await client.users.getUser(userId);
+    } catch (clerkError) {
+      console.warn('Could not fetch Clerk user details:', clerkError);
+    }
+
+    // Use actual email from Clerk or fallback to placeholder
+    const email = clerkUser?.emailAddresses?.[0]?.emailAddress || `${userId}@placeholder.local`;
+    
+    // Prepare additional user data from Clerk
+    const additionalData = {
+      firstName: clerkUser?.firstName || null,
+      lastName: clerkUser?.lastName || null,
+      profileImageUrl: clerkUser?.imageUrl || null,
+      emailVerified: clerkUser?.emailAddresses?.[0]?.verification?.status === 'verified' || false,
+      lastLoginAt: new Date(), // Update last login time
+    };
+
+    // Get or create user using NeonDB with complete data
+    const user = await UserRepository.getOrCreate(userId, email, additionalData);
     
     if (!user) {
+      console.error('Failed to create/retrieve user for:', userId);
       return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
     }
 
@@ -41,6 +63,9 @@ export async function GET() {
         canUploadDocument: UserRepository.canUploadDocument(user),
         canSendMessage: UserRepository.canSendMessage(user),
         isSubscriptionExpired: UserRepository.isSubscriptionExpired(user),
+        hasCompletedOnboarding: user.hasCompletedOnboarding,
+        needsOnboarding: UserRepository.needsOnboarding(user),
+        onboardingCompletedAt: user.onboardingCompletedAt,
       }
     });
   } catch (error) {
@@ -84,6 +109,8 @@ export async function POST(request: NextRequest) {
         );
       }
       user = await UserRepository.incrementMessageUsage(userId);
+    } else if (action === 'complete_onboarding') {
+      user = await UserRepository.completeOnboarding(userId);
     }
 
     if (!user) {

@@ -2,8 +2,9 @@
 
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { useState } from 'react';
 import {
-  Calendar,
+  Clock,
   ExternalLink,
   FileText,
   Globe,
@@ -11,6 +12,7 @@ import {
   Trash2,
   Video,
 } from 'lucide-react';
+import DeleteConfirmationDialog from './DeleteConfirmationDialog';
 
 interface CompactDocumentCardProps {
   document: {
@@ -24,10 +26,14 @@ interface CompactDocumentCardProps {
     sourceUrl?: string;
     fileType?: string;
   };
-  onDelete?: (id: string) => void;
+  onDelete?: (id: string) => Promise<void>;
 }
 
 const DocumentCard = ({ document, onDelete }: CompactDocumentCardProps) => {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showActions, setShowActions] = useState(false);
+  
   const getIcon = () => {
     switch (document.type) {
       case 'website':
@@ -39,151 +45,136 @@ const DocumentCard = ({ document, onDelete }: CompactDocumentCardProps) => {
     }
   };
 
-  const getIconColor = () => {
+  const getTypeConfig = () => {
     switch (document.type) {
       case 'website':
-        return 'text-emerald-500';
+        return {
+          icon: 'text-emerald-600',
+          bg: 'bg-emerald-50',
+          border: 'border-emerald-100',
+          badge: 'bg-emerald-100 text-emerald-700',
+          label: 'Website'
+        };
       case 'youtube':
-        return 'text-red-500';
+        return {
+          icon: 'text-red-600',
+          bg: 'bg-red-50',
+          border: 'border-red-100', 
+          badge: 'bg-red-100 text-red-700',
+          label: 'Video'
+        };
       default:
-        return 'text-blue-500';
+        return {
+          icon: 'text-blue-600',
+          bg: 'bg-blue-50',
+          border: 'border-blue-100',
+          badge: 'bg-blue-100 text-blue-700',
+          label: 'Document'
+        };
     }
   };
 
   const formatSize = (size: string | undefined) => {
     if (!size) return '';
-    return size.replace('Bytes', 'B').replace('KB', 'K').replace('MB', 'M');
+    return size.replace('Bytes', 'B').replace('KB', 'K').replace('MB', 'M').replace('GB', 'G');
   };
 
-  // Fixed formatTimeAgo function with proper date handling
   const formatTimeAgo = (date: Date | string) => {
     try {
-      // Ensure we have a proper Date object
       const dateObj = date instanceof Date ? date : new Date(date);
-
-      // Check if date is valid
-      if (isNaN(dateObj.getTime())) {
-        return 'unknown';
-      }
+      if (isNaN(dateObj.getTime())) return 'unknown';
 
       const now = new Date();
       const diff = now.getTime() - dateObj.getTime();
-      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor(diff / (1000 * 60));
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
 
-      if (hours < 1) return 'now';
+      if (minutes < 1) return 'now';
+      if (minutes < 60) return `${minutes}m`;
       if (hours < 24) return `${hours}h`;
-      if (hours < 24 * 7) return `${Math.floor(hours / 24)}d`;
-      return `${Math.floor(hours / (24 * 7))}w`;
-    } catch (error) {
-      console.warn('Error formatting date:', error);
+      if (days < 7) return `${days}d`;
+      return `${Math.floor(days / 7)}w`;
+    } catch {
       return 'unknown';
     }
   };
 
   const Icon = getIcon();
-  const isProcessing =
-    document.status === 'processing' || document.status === 'uploading';
+  const typeConfig = getTypeConfig();
+  const isProcessing = document.status === 'processing' || document.status === 'uploading';
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
+      exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.2 }}
-      className='w-full group relative'>
-      {/* Base card container */}
+      className='group relative'
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}>
+      
+      {/* Compact Card Container */}
       <div
         className={cn(
-          'relative w-full bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden',
-          isProcessing
-            ? 'border-2 border-transparent'
-            : 'border border-gray-200 hover:border-gray-300',
+          'relative w-full bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-all duration-200 overflow-hidden',
+          isProcessing && 'ring-2 ring-blue-100 border-blue-200',
+          document.status === 'error' && 'ring-2 ring-red-100 border-red-200'
         )}>
-        {/* Animated border when processing */}
+        
+        {/* Processing Animation Bar */}
         {isProcessing && (
           <motion.div
-            className='absolute inset-0 rounded-lg overflow-hidden'
-            style={{
-              background:
-                document.status === 'processing'
-                  ? 'linear-gradient(90deg, rgba(59, 130, 246, 0.5), rgba(147, 51, 234, 0.5), rgba(236, 72, 153, 0.5), rgba(59, 130, 246, 0.5))'
-                  : 'linear-gradient(90deg, rgba(245, 158, 11, 0.5), rgba(239, 68, 68, 0.5), rgba(245, 158, 11, 0.5), rgba(239, 68, 68, 0.5))',
-              backgroundSize: '300% 100%',
-            }}
-            animate={{
-              backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
-            }}
+            className='absolute top-0 left-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500'
+            initial={{ width: '0%' }}
+            animate={{ width: ['0%', '100%', '0%'] }}
             transition={{
               duration: 2,
               repeat: Infinity,
-              ease: 'linear',
+              ease: 'easeInOut',
             }}
           />
         )}
 
-        {/* Inner content background */}
-        <div
-          className={cn(
-            'absolute inset-0 bg-white rounded-lg',
-            isProcessing ? 'm-0.5' : 'm-0',
-          )}
-        />
-
-        {/* Card content - Better aligned layout with smaller icons */}
-        <div className='relative z-10 w-full overflow-hidden'>
-          {/* Header section */}
-          <div className='px-4 py-2.5 border-b border-gray-100'>
-            <div className='flex items-center justify-between gap-3'>
-              {/* Left: Icon and type - Made icon container smaller */}
-              <div className='flex items-center gap-2.5'>
-                <motion.div
-                  className={cn(
-                    'w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0',
-                    document.type === 'website'
-                      ? 'bg-emerald-50 border border-emerald-200'
-                      : document.type === 'youtube'
-                      ? 'bg-red-50 border border-red-200'
-                      : 'bg-blue-50 border border-blue-200',
-                  )}
-                  animate={{
-                    scale: isProcessing ? [1, 1.02, 1] : 1,
-                    rotate: isProcessing ? [0, 1, -1, 0] : 0,
-                  }}
-                  transition={{
-                    duration: 2.5,
-                    repeat: isProcessing ? Infinity : 0,
-                    ease: 'easeInOut',
-                  }}>
-                  {/* Reduced main icon size from w-4 h-4 to w-3.5 h-3.5 */}
-                  <Icon className={cn('w-3.5 h-3.5', getIconColor())} />
-                </motion.div>
-
-                {/* Document type badge */}
-                <span
-                  className={cn(
-                    'px-2 py-0.5 rounded text-xs font-medium tracking-wide whitespace-nowrap',
-                    document.type === 'youtube' && 'bg-red-100 text-red-700',
-                    document.type === 'website' &&
-                      'bg-emerald-100 text-emerald-700',
-                    document.type === 'file' && 'bg-blue-100 text-blue-700',
-                  )}>
-                  {document.type === 'youtube' && 'Video'}
-                  {document.type === 'website' && 'Website'}
-                  {document.type === 'file' && 'Document'}
+        {/* Well-Structured Layout */}
+        <div className='p-4'>
+          {/* Header Row */}
+          <div className='flex items-start justify-between gap-3 mb-3'>
+            {/* Left: Icon + Type + Status */}
+            <div className='flex items-center gap-2.5'>
+              <motion.div
+                className={cn(
+                  'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
+                  typeConfig.bg,
+                  typeConfig.border,
+                  'border shadow-sm'
+                )}
+                animate={isProcessing ? { 
+                  scale: [1, 1.03, 1],
+                  rotate: [0, 1, -1, 0] 
+                } : {}}
+                transition={{
+                  duration: 2.5,
+                  repeat: isProcessing ? Infinity : 0,
+                  ease: 'easeInOut',
+                }}>
+                <Icon className={cn('w-5 h-5', typeConfig.icon)} />
+              </motion.div>
+              
+              <div className='flex flex-col gap-1'>
+                <span className={cn(
+                  'px-2.5 py-1 rounded-lg text-xs font-semibold',
+                  typeConfig.badge
+                )}>
+                  {typeConfig.label}
                 </span>
-              </div>
-
-              {/* Right: Status and actions */}
-              <div className='flex items-center gap-2'>
+                
                 <span
                   className={cn(
-                    'text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap',
-                    document.status === 'ready' &&
-                      'bg-emerald-100 text-emerald-700',
-                    document.status === 'processing' &&
-                      'bg-blue-100 text-blue-700',
-                    document.status === 'uploading' &&
-                      'bg-amber-100 text-amber-700',
+                    'text-[10px] px-2 py-0.5 rounded-full font-medium w-fit',
+                    document.status === 'ready' && 'bg-emerald-100 text-emerald-700',
+                    document.status === 'processing' && 'bg-blue-100 text-blue-700',
+                    document.status === 'uploading' && 'bg-orange-100 text-orange-700',
                     document.status === 'error' && 'bg-red-100 text-red-700',
                   )}>
                   {document.status === 'ready' && '✓ Ready'}
@@ -191,108 +182,135 @@ const DocumentCard = ({ document, onDelete }: CompactDocumentCardProps) => {
                   {document.status === 'uploading' && '📤 Uploading'}
                   {document.status === 'error' && '❌ Error'}
                 </span>
-
-                {/* Action buttons - Made containers and icons smaller */}
-                <div className='flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity'>
-                  {document.sourceUrl && (
-                    <motion.button
-                      className='h-6 w-6 rounded-md hover:bg-blue-50 hover:text-blue-600 flex items-center justify-center transition-colors'
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.open(document.sourceUrl, '_blank');
-                      }}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      title='Open source'>
-                      {/* Reduced action icon size from w-4 h-4 to w-3.5 h-3.5 */}
-                      <ExternalLink className='w-3.5 h-3.5' />
-                    </motion.button>
-                  )}
-
-                  {onDelete && (
-                    <motion.button
-                      className='h-6 w-6 rounded-md hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition-colors'
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (window.confirm(`Delete "${document.name}"?`)) {
-                          onDelete(document.id);
-                        }
-                      }}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      title='Delete document'>
-                      {/* Reduced action icon size from w-4 h-4 to w-3.5 h-3.5 */}
-                      <Trash2 className='w-3.5 h-3.5' />
-                    </motion.button>
-                  )}
-                </div>
               </div>
+            </div>
+
+            {/* Right: Actions */}
+            <div className='flex items-center gap-1 flex-shrink-0'>
+              <motion.div
+                className='flex items-center gap-1'
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ 
+                  opacity: showActions ? 1 : 0,
+                  x: showActions ? 0 : 8
+                }}
+                transition={{ duration: 0.2 }}>
+                
+                {document.sourceUrl && (
+                  <motion.button
+                    className='w-8 h-8 rounded-lg hover:bg-blue-50 flex items-center justify-center transition-colors group/btn border border-transparent hover:border-blue-200'
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(document.sourceUrl, '_blank');
+                    }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    title='Open source'>
+                    <ExternalLink className='w-4 h-4 text-gray-400 group-hover/btn:text-blue-600' />
+                  </motion.button>
+                )}
+
+                {onDelete && (
+                  <motion.button
+                    className='w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center transition-colors group/btn border border-transparent hover:border-red-200'
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteDialog(true);
+                    }}
+                    disabled={isDeleting}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    title='Delete document'>
+                    <Trash2 className='w-4 h-4 text-gray-400 group-hover/btn:text-red-600' />
+                  </motion.button>
+                )}
+              </motion.div>
             </div>
           </div>
 
-          {/* Content section */}
-          <div className='px-4 py-3'>
-            {/* Document title */}
-            <h3 className='font-semibold text-sm text-gray-900 mb-2 line-clamp-1 leading-tight'>
+          {/* Document Name */}
+          <div className='mb-3'>
+            <h3 className='font-semibold text-base text-gray-900 line-clamp-2 leading-snug'>
               {document.name}
             </h3>
-
-            {/* Metadata row with smaller icons */}
-            <div className='flex items-center justify-between text-xs text-gray-500'>
-              <div className='flex items-center gap-3'>
-                {/* File size */}
-                {document.size && (
-                  <div className='flex items-center gap-1'>
-                    <div className='w-3 h-3 rounded bg-gray-100 flex items-center justify-center'>
-                      <span className='text-[8px]'>📊</span>
-                    </div>
-                    <span className='font-medium'>
-                      {formatSize(document.size)}
-                    </span>
-                  </div>
-                )}
-
-                {/* Chunks count - Made Hash icon smaller */}
-                {typeof document.chunksCount === 'number' && (
-                  <div className='flex items-center gap-1'>
-                    <Hash className='w-2.5 h-2.5 text-gray-400' />
-                    <span className='font-medium'>{document.chunksCount}</span>
-                  </div>
-                )}
-
-                {/* File type */}
-                {document.fileType && (
-                  <div className='flex items-center gap-1'>
-                    <div className='w-3 h-3 rounded bg-gray-100 flex items-center justify-center'>
-                      <span className='text-[8px]'>🏷️</span>
-                    </div>
-                    <span className='uppercase font-medium text-[11px]'>
-                      {document.fileType.split('/')[1] || document.fileType}
-                    </span>
-                  </div>
-                )}
+          </div>
+          
+          {/* Metadata Grid */}
+          <div className='grid grid-cols-3 gap-4 text-xs text-gray-600'>
+            <div className='flex flex-col gap-1'>
+              <div className='flex items-center gap-1.5 text-gray-400'>
+                <div className='w-3 h-3 bg-gray-200 rounded-full flex items-center justify-center'>
+                  <span className='text-[8px]'>📊</span>
+                </div>
+                <span className='font-medium'>Size</span>
               </div>
-
-              {/* Upload date - Made Calendar icon smaller */}
-              <div className='flex items-center gap-1'>
-                <Calendar className='w-2.5 h-2.5 text-gray-400' />
-                <span className='font-medium'>
-                  {formatTimeAgo(document.uploadedAt)}
-                </span>
+              <span className='font-semibold text-gray-700 ml-4'>
+                {document.size ? formatSize(document.size) : 'Unknown'}
+              </span>
+            </div>
+            
+            <div className='flex flex-col gap-1'>
+              <div className='flex items-center gap-1.5 text-gray-400'>
+                <Hash className='w-3 h-3' />
+                <span className='font-medium'>Chunks</span>
               </div>
+              <span className='font-semibold text-gray-700 ml-4'>
+                {typeof document.chunksCount === 'number' ? document.chunksCount : 0}
+              </span>
+            </div>
+            
+            <div className='flex flex-col gap-1'>
+              <div className='flex items-center gap-1.5 text-gray-400'>
+                <Clock className='w-3 h-3' />
+                <span className='font-medium'>Added</span>
+              </div>
+              <span className='font-semibold text-gray-700 ml-4'>
+                {formatTimeAgo(document.uploadedAt)}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Source URL tooltip for web content */}
+        {/* Source URL Tooltip */}
         {document.sourceUrl && (
-          <div className='absolute -bottom-8 left-4 opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none'>
-            <div className='bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap max-w-xs truncate'>
-              {new URL(document.sourceUrl).hostname}
-            </div>
-          </div>
+          <motion.div
+            className='absolute -bottom-8 left-3 bg-gray-900 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap max-w-xs truncate pointer-events-none z-20'
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ 
+              opacity: showActions ? 1 : 0,
+              y: showActions ? 0 : -5
+            }}
+            transition={{ duration: 0.2 }}>
+            {new URL(document.sourceUrl).hostname}
+          </motion.div>
         )}
       </div>
+      
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={async () => {
+          if (onDelete) {
+            setIsDeleting(true);
+            try {
+              await onDelete(document.id);
+            } finally {
+              setIsDeleting(false);
+              setShowDeleteDialog(false);
+            }
+          }
+        }}
+        itemType="document"
+        itemName={document.name}
+        itemDetails={{
+          type: document.fileType,
+          size: document.size,
+          uploadDate: new Date(document.uploadedAt).toLocaleDateString(),
+          chunkCount: document.chunksCount
+        }}
+        isDeleting={isDeleting}
+      />
     </motion.div>
   );
 };

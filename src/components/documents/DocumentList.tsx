@@ -2,35 +2,22 @@
 
 import { FileText, Loader2 } from 'lucide-react';
 import DocumentCard from '../DocumentCard';
+import toast from 'react-hot-toast';
+import { TempDocument, ExtendedDocument } from './types';
 
-/**
- * Extended document interface for the document list
- */
-interface ExtendedDocument {
-  id: string;
-  name: string;
-  status: 'uploading' | 'processing' | 'ready' | 'error';
-  metadata: {
-    size?: number;
-    type: string;
-    uploadedAt?: Date;
-    chunksCount?: number;
-  };
-  sourceUrl?: string;
-  loader?: string;
-  fileType?: string;
-}
 
 /**
  * Props for the DocumentList component
  */
 interface DocumentListProps {
   /** Array of documents to display */
-  documents: ExtendedDocument[];
+  documents: (ExtendedDocument | TempDocument)[];
   /** Whether the component is loading */
   isLoading: boolean;
   /** Callback when a document is deleted */
   onDeleteDocument: (id: string) => void;
+  /** Function to update documents state (for temp document removal) */
+  setDocuments?: React.Dispatch<React.SetStateAction<(ExtendedDocument | TempDocument)[]>>;
 }
 
 /**
@@ -49,6 +36,7 @@ export default function DocumentList({
   documents,
   isLoading,
   onDeleteDocument,
+  setDocuments,
 }: DocumentListProps) {
   /**
    * Formats file size from bytes to human readable format
@@ -63,31 +51,21 @@ export default function DocumentList({
 
   return (
     <div className='flex-1 flex flex-col min-h-0'>
-      {/* Header with count */}
-      <div className='flex items-center justify-between mb-2 flex-shrink-0'>
-        <h3 className='text-xs font-semibold text-gray-700 uppercase tracking-wider'>
-          Documents
-        </h3>
-        <span className='text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full'>
-          {documents.length}
-        </span>
-      </div>
-
       {/* Scrollable Documents Container */}
       <div
         className={`
-        flex-1 overflow-y-auto space-y-2 min-h-0 pb-1
+        flex-1 overflow-y-auto space-y-1.5 min-h-0 pb-1
         ${
-          documents.length > 3
+          documents.length > 4
             ? 'scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400 scrollbar-track-transparent'
             : ''
         }
         scrollbar-thumb-rounded-full scrollbar-track-rounded-full
       `}
         style={{
-          scrollbarWidth: documents.length > 3 ? 'thin' : 'none',
+          scrollbarWidth: documents.length > 4 ? 'thin' : 'none',
           scrollbarColor:
-            documents.length > 3
+            documents.length > 4
               ? '#d1d5db transparent'
               : 'transparent transparent',
         }}>
@@ -125,28 +103,54 @@ export default function DocumentList({
         ) : (
           /* Document List */
           documents.map((doc) => {
+            // Handle both temporary documents and real documents
+            const isTemp = doc.id.startsWith('temp-');
+            
+            const tempDoc = isTemp ? doc as TempDocument : null;
+            const extDoc = !isTemp ? doc as ExtendedDocument : null;
+
             const mappedDoc = {
               id: doc.id,
               name: doc.name,
-              type:
-                doc.metadata.type === 'video/youtube'
+              type: tempDoc 
+                ? tempDoc.type  // Temp documents have type directly
+                : extDoc?.metadata?.type === 'video/youtube'
                   ? ('youtube' as const)
-                  : doc.metadata.type === 'text/html'
+                  : extDoc?.metadata?.type === 'text/html'
                   ? ('website' as const)
                   : ('file' as const),
-              size: formatFileSize(doc.metadata.size),
+              size: tempDoc 
+                ? tempDoc.size  // Temp documents have size as string
+                : formatFileSize(extDoc?.metadata?.size || 0),
               status: doc.status,
-              chunksCount: doc.metadata.chunksCount,
-              uploadedAt: doc.metadata.uploadedAt ?? '',
-              sourceUrl: doc.sourceUrl,
-              fileType: doc.fileType,
+              chunksCount: tempDoc 
+                ? tempDoc.chunksCount || 0
+                : extDoc?.metadata?.chunksCount || 0,
+              uploadedAt: tempDoc 
+                ? tempDoc.uploadedAt || ''
+                : extDoc?.metadata?.uploadedAt ?? '',
+              sourceUrl: tempDoc 
+                ? tempDoc.sourceUrl
+                : extDoc?.sourceUrl,
+              fileType: tempDoc 
+                ? tempDoc.fileType
+                : extDoc?.fileType,
             };
 
             return (
               <DocumentCard
                 key={doc.id}
                 document={mappedDoc}
-                onDelete={onDeleteDocument}
+                onDelete={async (id: string) => {
+                  if (isTemp && setDocuments) {
+                    // For temp documents, just remove from state
+                    setDocuments(prev => prev.filter(doc => doc.id !== id));
+                    toast.success('Upload cancelled');
+                  } else {
+                    // For real documents, use the proper delete function
+                    await onDeleteDocument(id);
+                  }
+                }}
               />
             );
           })

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import DeleteConfirmationDialog from './DeleteConfirmationDialog';
 
 interface Note {
   id: string;
@@ -34,7 +35,7 @@ interface NoteDetailsDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (note: Note) => void;
-  onDelete?: (noteId: string) => void;
+  onDelete?: (noteId: string) => Promise<void>;
 }
 
 export default function NoteEditDialog({
@@ -48,6 +49,8 @@ export default function NoteEditDialog({
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editType, setEditType] = useState<Note['type']>('summary');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (note) {
@@ -125,6 +128,7 @@ export default function NoteEditDialog({
   const TypeIcon = getTypeIcon(note.type);
 
   return (
+    <>
     <AnimatePresence mode='wait'>
       {isOpen && (
         <Dialog
@@ -366,16 +370,8 @@ export default function NoteEditDialog({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}>
                     <Button
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            'Are you sure you want to delete this note? This action cannot be undone.',
-                          )
-                        ) {
-                          onDelete(note.id);
-                          onClose();
-                        }
-                      }}
+                      onClick={() => setShowDeleteDialog(true)}
+                      disabled={isDeleting}
                       variant='outline'
                       size='sm'
                       className='text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300 transition-all duration-200'>
@@ -392,5 +388,33 @@ export default function NoteEditDialog({
         </Dialog>
       )}
     </AnimatePresence>
+    
+    {/* Delete Confirmation Dialog */}
+    {note && (
+      <DeleteConfirmationDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={async () => {
+          if (onDelete && note) {
+            setIsDeleting(true);
+            try {
+              await onDelete(note.id);
+              onClose();
+            } finally {
+              setIsDeleting(false);
+              setShowDeleteDialog(false);
+            }
+          }
+        }}
+        itemType="note"
+        itemName={note?.title}
+        itemDetails={{
+          type: note?.type,
+          uploadDate: new Date(note?.createdAt || new Date()).toLocaleDateString()
+        }}
+        isDeleting={isDeleting}
+      />
+    )}
+    </>
   );
 }

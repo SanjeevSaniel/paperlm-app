@@ -75,12 +75,32 @@ export const useProfileFormStore = create<ProfileFormState>()(
         saveForm: async () => {
           const { formData } = get()
           try {
-            // TODO: Implement actual API call to save profile data
             console.log('Saving profile data:', formData)
+            
+            // Update profile via API
+            const response = await fetch('/api/user/profile', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                bio: formData.bio,
+              }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || 'Failed to save profile');
+            }
+
+            const result = await response.json();
+            console.log('✅ Profile saved successfully:', result);
             
             set({ hasChanges: false, isEditing: false })
           } catch (error) {
-            console.error('Error saving profile:', error)
+            console.error('❌ Error saving profile:', error)
             throw error
           }
         },
@@ -107,22 +127,69 @@ interface AppPreferencesState {
   setTimezone: (timezone: string) => void
   setEmailNotifications: (enabled: boolean) => void
   setPushNotifications: (enabled: boolean) => void
+  savePreferences: () => Promise<void>
 }
 
 export const useAppPreferencesStore = create<AppPreferencesState>()(
   devtools(
     persist(
-      (set) => ({
+      (set, get) => ({
         theme: 'light',
         language: 'en',
         timezone: 'UTC',
         emailNotifications: true,
         pushNotifications: true,
-        setTheme: (theme) => set({ theme }),
+        setTheme: (theme) => {
+          set({ theme });
+          // Apply theme to document
+          const root = document.documentElement;
+          if (theme === 'dark') {
+            root.classList.add('dark');
+          } else if (theme === 'light') {
+            root.classList.remove('dark');
+          } else {
+            // System theme
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            if (mediaQuery.matches) {
+              root.classList.add('dark');
+            } else {
+              root.classList.remove('dark');
+            }
+          }
+        },
         setLanguage: (language) => set({ language }),
         setTimezone: (timezone) => set({ timezone }),
         setEmailNotifications: (emailNotifications) => set({ emailNotifications }),
         setPushNotifications: (pushNotifications) => set({ pushNotifications }),
+        savePreferences: async () => {
+          const { theme, language, timezone, emailNotifications, pushNotifications } = get();
+          try {
+            const response = await fetch('/api/user/preferences', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                theme,
+                language,
+                timezone,
+                emailNotifications,
+                pushNotifications,
+              }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || 'Failed to save preferences');
+            }
+
+            const result = await response.json();
+            console.log('✅ Preferences saved successfully:', result);
+          } catch (error) {
+            console.error('❌ Error saving preferences:', error);
+            throw error;
+          }
+        },
       }),
       {
         name: 'app-preferences-storage',

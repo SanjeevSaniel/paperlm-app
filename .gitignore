@@ -56,3 +56,5 @@ clerk-settings.json
 
 # Claude Code settings (contains tokens/credentials)
 .claude/settings.local.json
+CLAUDE.local.md
+CLAUDE.md

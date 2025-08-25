@@ -1,6 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
-import connectDB from '@/lib/mongodb';
-import User from '@/models/User';
+import { UserRepository } from '@/lib/repositories/userRepository';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET() {
@@ -11,27 +10,35 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-    
-    const user = await User.findOne({ clerkId: userId });
+    const user = await UserRepository.findByClerkId(userId);
     
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Check if subscription is expired
-    const isExpired = user.isSubscriptionExpired();
+    const isExpired = UserRepository.isSubscriptionExpired(user);
     
-    if (isExpired && user.subscription.status === 'active') {
-      user.subscription.status = 'expired';
-      await user.save();
+    // Update status if expired
+    if (isExpired && user.subscriptionStatus === 'active') {
+      await UserRepository.update(userId, { subscriptionStatus: 'expired' });
     }
 
+    const subscription = {
+      plan: user.subscriptionPlan,
+      status: isExpired && user.subscriptionStatus === 'active' ? 'expired' : user.subscriptionStatus,
+      startDate: user.subscriptionStartDate?.toISOString() || '',
+      endDate: user.subscriptionEndDate?.toISOString() || '',
+    };
+
+    const daysUntilExpiry = isExpired ? 0 : 
+      user.subscriptionEndDate ? Math.ceil((new Date(user.subscriptionEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+
     return NextResponse.json({
-      subscription: user.subscription,
-      purchaseHistory: user.purchaseHistory,
+      subscription,
+      purchaseHistory: [], // Will be implemented with billing history table later
       isExpired,
-      daysUntilExpiry: isExpired ? 0 : Math.ceil((user.subscription.endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+      daysUntilExpiry,
     });
   } catch (error) {
     console.error('Subscription fetch error:', error);
@@ -52,9 +59,7 @@ export async function POST(request: NextRequest) {
 
     const { action, plan } = await request.json();
 
-    await connectDB();
-    
-    const user = await User.findOne({ clerkId: userId });
+    const user = await UserRepository.findByClerkId(userId);
     
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -66,36 +71,44 @@ export async function POST(request: NextRequest) {
       const endDate = new Date();
       endDate.setMonth(endDate.getMonth() + 1);
 
-      user.subscription.plan = plan;
-      user.subscription.status = 'active';
-      user.subscription.startDate = startDate;
-      user.subscription.endDate = endDate;
-
-      // Add to purchase history
-      user.purchaseHistory.push({
-        id: `purchase_${Date.now()}`,
-        plan: plan,
-        amount: plan === 'pro' ? 900 : 0, // $9.00 in cents
-        currency: 'usd',
-        status: 'completed',
-        purchaseDate: startDate,
-        validUntil: endDate,
+      const updatedUser = await UserRepository.update(userId, {
+        subscriptionPlan: plan,
+        subscriptionStatus: 'active',
+        subscriptionStartDate: startDate,
+        subscriptionEndDate: endDate,
       });
 
-      await user.save();
+      if (!updatedUser) {
+        return NextResponse.json({ error: 'Failed to update subscription' }, { status: 500 });
+      }
 
       return NextResponse.json({
         success: true,
-        subscription: user.subscription,
+        subscription: {
+          plan: updatedUser.subscriptionPlan,
+          status: updatedUser.subscriptionStatus,
+          startDate: updatedUser.subscriptionStartDate?.toISOString(),
+          endDate: updatedUser.subscriptionEndDate?.toISOString(),
+        },
         message: `Successfully upgraded to ${plan} plan!`,
       });
     } else if (action === 'cancel') {
-      user.subscription.status = 'cancelled';
-      await user.save();
+      const updatedUser = await UserRepository.update(userId, {
+        subscriptionStatus: 'cancelled',
+      });
+
+      if (!updatedUser) {
+        return NextResponse.json({ error: 'Failed to cancel subscription' }, { status: 500 });
+      }
 
       return NextResponse.json({
         success: true,
-        subscription: user.subscription,
+        subscription: {
+          plan: updatedUser.subscriptionPlan,
+          status: updatedUser.subscriptionStatus,
+          startDate: updatedUser.subscriptionStartDate?.toISOString(),
+          endDate: updatedUser.subscriptionEndDate?.toISOString(),
+        },
         message: 'Subscription cancelled successfully',
       });
     }
