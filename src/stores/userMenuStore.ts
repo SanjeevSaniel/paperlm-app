@@ -133,7 +133,7 @@ interface AppPreferencesState {
 export const useAppPreferencesStore = create<AppPreferencesState>()(
   devtools(
     persist(
-      (set) => ({
+      (set, get) => ({
         theme: 'light',
         language: 'en',
         timezone: 'UTC',

@@ -255,7 +255,7 @@ ${scraped.content}`;
     // Generate proper UUID for anonymous users if no authenticated user
     let anonymousUserId = user?.id;
     if (!anonymousUserId) {
-      const sessionStr = sessionId || userId || 'anonymous';
+      const sessionStr = sessionId || user?.id || 'anonymous';
       // Convert sessionId to a consistent hash and format as UUID
       let hash = 0;
       for (let i = 0; i < sessionStr.length; i++) {
@@ -285,7 +285,7 @@ ${scraped.content}`;
       metadata: {
         ...scraped.metadata,
         scrapeType: type,
-        userType: isAnonymousUser ? 'anonymous' : 'registered_free',
+        userType: (isAnonymousUser ? 'temporary' : 'registered_free') as 'registered_free' | 'registered_pro' | 'temporary' | 'session' | 'unknown',
         isAnonymous: isAnonymousUser,
       },
     });
@@ -318,7 +318,7 @@ ${scraped.content}`;
         fileSize: scraped!.content.length,
         sessionId: sessionId,
         userId: user.id,
-        userType: isAnonymousUser ? 'anonymous' : 'registered_free',
+        userType: (isAnonymousUser ? 'temporary' : 'registered_free') as 'registered_free' | 'registered_pro' | 'temporary' | 'session' | 'unknown',
         sourceUrl: url,
         loader:
           typeof scraped!.metadata?.loader === 'string'

@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
           noteType.searchQuery,
           8,  // Get more results for better content
           sessionId,
-          userId
+          userId || undefined
         );
 
         if (searchResults.length === 0) {

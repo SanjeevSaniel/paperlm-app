@@ -30,7 +30,7 @@ export interface PlanConfig {
 }
 
 // Current exchange rate and fee structure (update as needed)
-const EXCHANGE_RATE = 84; // 1 USD = 84 INR (approximate)
+// const EXCHANGE_RATE = 84; // 1 USD = 84 INR (approximate)
 const USD_TO_INR_BASE_RATE = 83.5; // Base rate before fees
 
 // Fee calculations for INR payments

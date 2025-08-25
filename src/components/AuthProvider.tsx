@@ -39,15 +39,16 @@ export default function AuthProvider({ children }: AuthProviderProps) {
             try {
               await fetchUserData();
               console.log('✅ User data fetched successfully');
-            } catch (fetchError: any) {
+            } catch (fetchError: unknown) {
               console.error(`Failed to fetch user data (attempt ${retryCount + 1}/${maxRetries}):`, fetchError);
               
               // Retry on 401/500 errors which might be timing related
+              const errorMessage = fetchError instanceof Error ? fetchError.message : String(fetchError);
               if (retryCount < maxRetries && (
-                fetchError.message?.includes('401') || 
-                fetchError.message?.includes('500') ||
-                fetchError.message?.includes('Unauthorized') ||
-                fetchError.message?.includes('Failed to fetch user data')
+                errorMessage.includes('401') || 
+                errorMessage.includes('500') ||
+                errorMessage.includes('Unauthorized') ||
+                errorMessage.includes('Failed to fetch user data')
               )) {
                 retryCount++;
                 console.log(`⏳ Retrying user data fetch in ${retryDelay}ms...`);

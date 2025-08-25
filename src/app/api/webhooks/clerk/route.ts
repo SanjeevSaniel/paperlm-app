@@ -78,8 +78,8 @@ export async function POST(request: NextRequest) {
         {
           firstName: first_name || null,
           lastName: last_name || null,
-          profileImageUrl: image_url || null,
-          emailVerified: email_addresses[0]?.verification?.status === 'verified' || false,
+          profileImageUrl: (typeof image_url === 'string' ? image_url : null),
+          emailVerified: false, // Will be updated when verification webhook is received
           lastLoginAt: new Date(),
         }
       );
@@ -103,8 +103,8 @@ export async function POST(request: NextRequest) {
         email: email_addresses[0]?.email_address || `${id}@placeholder.local`,
         firstName: first_name || null,
         lastName: last_name || null,
-        profileImageUrl: image_url || null,
-        emailVerified: email_addresses[0]?.verification?.status === 'verified' || false,
+        profileImageUrl: (typeof image_url === 'string' ? image_url : null),
+        emailVerified: false,
       });
 
       if (updatedUser) {

@@ -134,7 +134,7 @@ async function performVectorSearch(
     }
 
     // Build search request with correct Qdrant API format
-    const searchRequest: any = {
+    const searchRequest: Record<string, unknown> = {
       vector: queryEmbedding,
       limit: k,
       with_payload: true,
@@ -170,15 +170,16 @@ async function performVectorSearch(
       embeddingDim: queryEmbedding.length
     });
 
-    const response = await c.search(COLLECTION_NAME, searchRequest);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response = await c.search(COLLECTION_NAME, searchRequest as any);
     
     if (!response || !Array.isArray(response)) {
       console.warn('Invalid Qdrant response:', response);
       return [];
     }
 
-    const results = response.map((hit: any) => {
-      const payload = hit.payload || {};
+    const results = response.map((hit: Record<string, unknown>) => {
+      const payload = (hit.payload || {}) as Record<string, unknown>;
       
       const metadata: RAGMetadata = {
         documentId: String(payload.documentId || 'unknown'),
@@ -191,15 +192,15 @@ async function performVectorSearch(
         fileSize: Number(payload.fileSize || 0),
         sessionId: String(payload.sessionId || sessionId || 'unknown'),
         userId: String(payload.userId || resolvedUserId || 'unknown'),
-        userType: payload.userType || 'unknown',
-        uploadedAt: payload.uploadedAt,
-        confidence: hit.score || 0,
-        contextBefore: payload.contextBefore || '',
-        contextAfter: payload.contextAfter || '',
+        userType: (payload.userType as 'registered_free' | 'registered_pro' | 'temporary' | 'session' | 'unknown') || 'unknown',
+        uploadedAt: String(payload.uploadedAt || ''),
+        confidence: Number(hit.score) || 0,
+        contextBefore: String(payload.contextBefore || ''),
+        contextAfter: String(payload.contextAfter || ''),
       };
 
       return {
-        pageContent: String(payload.pageContent || ''),
+        pageContent: String((hit.payload as Record<string, unknown>)?.pageContent || ''),
         metadata,
       };
     });

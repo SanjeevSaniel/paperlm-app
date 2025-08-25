@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import {
-  Calendar,
   Clock,
   ExternalLink,
   FileText,
@@ -12,7 +11,6 @@ import {
   Hash,
   Trash2,
   Video,
-  MoreVertical,
 } from 'lucide-react';
 import DeleteConfirmationDialog from './DeleteConfirmationDialog';
 
@@ -97,7 +95,7 @@ const DocumentCard = ({ document, onDelete }: CompactDocumentCardProps) => {
       if (hours < 24) return `${hours}h`;
       if (days < 7) return `${days}d`;
       return `${Math.floor(days / 7)}w`;
-    } catch (error) {
+    } catch {
       return 'unknown';
     }
   };

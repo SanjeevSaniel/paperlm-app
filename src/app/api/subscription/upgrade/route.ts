@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       yearly: { amount: 15000, months: 12 }, // $15/month billed yearly ($180/year)
     };
 
-    const selectedPricing = pricing[billing];
+    const selectedPricing = pricing[billing as keyof typeof pricing];
     endDate.setMonth(endDate.getMonth() + selectedPricing.months);
 
     try {

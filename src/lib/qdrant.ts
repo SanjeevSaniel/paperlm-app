@@ -329,8 +329,8 @@ export async function deleteDocumentFromQdrant(documentId: string): Promise<bool
         });
         
         // Manual filter
-        const filteredPoints = searchResult.points.filter((point: any) => 
-          point.payload?.documentId === documentId
+        const filteredPoints = searchResult.points.filter((point: Record<string, unknown>) => 
+          (point.payload as Record<string, unknown>)?.documentId === documentId
         );
         
         searchResult = { points: filteredPoints };
@@ -349,7 +349,7 @@ export async function deleteDocumentFromQdrant(documentId: string): Promise<bool
     console.log('🗑️ Attempting deletion...');
     
     // Approach 1: Delete by point IDs (more reliable)
-    const pointIds = searchResult.points.map((point: any) => point.id);
+    const pointIds = searchResult.points.map((point: Record<string, unknown>) => String(point.id));
     console.log(`🎯 Attempting to delete ${pointIds.length} points by IDs:`, pointIds.slice(0, 3));
     
     const result = await c.delete(COLLECTION_NAME, {

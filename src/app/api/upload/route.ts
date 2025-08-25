@@ -188,13 +188,13 @@ export async function POST(request: NextRequest) {
           uploadedAt: new Date().toISOString(),
           sessionId: sessionId,
           userId: user.id,
-          userType: isAnonymousUser ? 'anonymous' : 'registered_free',
+          userType: (isAnonymousUser ? 'temporary' : 'registered_free') as 'registered_free' | 'registered_pro' | 'temporary' | 'session' | 'unknown',
           // Enhanced metadata from efficient processing
           isTextInput: file.name === 'text-input.txt',
-          wordCount: chunk.metadata.wordCount || 0,
-          chunkQuality: chunk.metadata.quality || 0.5,
-          contentType: chunk.metadata.contentType || 'paragraph',
-          hasStructure: chunk.metadata.hasStructure || false,
+          wordCount: 0,
+          chunkQuality: 0.5,
+          contentType: 'paragraph',
+          hasStructure: false,
           // Required fields
           sourceUrl: '',
           loader: undefined,

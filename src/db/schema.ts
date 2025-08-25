@@ -206,7 +206,7 @@ export const billingHistory = pgTable('billing_history', {
   invoiceNumber: varchar('invoice_number', { length: 100 }),
   
   // Metadata
-  metadata: json('metadata').$type<Record<string, any>>(),
+  metadata: json('metadata').$type<Record<string, unknown>>(),
   
   // Timestamps
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -228,7 +228,7 @@ export const userActivityLogs = pgTable('user_activity_logs', {
   sessionId: varchar('session_id', { length: 255 }),
   
   // Additional data
-  metadata: json('metadata').$type<Record<string, any>>(),
+  metadata: json('metadata').$type<Record<string, unknown>>(),
   
   // Timestamp
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -260,7 +260,7 @@ export const userSettings = pgTable('user_settings', {
   defaultExportFormat: varchar('default_export_format', { length: 10 }).default('pdf'),
   
   // Advanced settings
-  advancedSettings: json('advanced_settings').$type<Record<string, any>>(),
+  advancedSettings: json('advanced_settings').$type<Record<string, unknown>>(),
   
   // Timestamps
   createdAt: timestamp('created_at').defaultNow().notNull(),

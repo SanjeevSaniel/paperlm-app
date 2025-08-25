@@ -5,9 +5,9 @@
 
 import { DocumentChunk } from '@/types';
 import { EfficientTextSplitter, generateEmbeddings } from './advancedRag';
-import fs from 'fs/promises';
-import path from 'path';
-import os from 'os';
+// import fs from 'fs/promises';
+// import path from 'path';
+// import os from 'os';
 
 /**
  * Lightweight PDF text extraction without LangChain
@@ -19,8 +19,8 @@ export async function extractPDFTextEfficient(file: File): Promise<string> {
     // Method 1: Try pdf-parse (lighter than LangChain)
     const buffer = Buffer.from(arrayBuffer);
     
-    // Direct import to avoid dynamic import issues
-    const pdfParse = require('pdf-parse');
+    // Dynamic import to avoid ESLint require() error
+    const { default: pdfParse } = await import('pdf-parse');
     const data = await pdfParse(buffer);
     
     if (data.text && data.text.trim().length > 50) {

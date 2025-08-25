@@ -82,6 +82,7 @@ export const useAuthStore = create<AuthState>()(
         setError: (error) => set({ error }),
         setAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
         setInitialized: (isInitialized) => set({ isInitialized }),
+        setLoggingOut: (isLoggingOut) => set({ isLoggingOut }),
 
         // Fetch user data from API
         fetchUserData: async () => {
@@ -297,6 +298,7 @@ export const useAuthStore = create<AuthState>()(
             error: null,
             isAuthenticated: false,
             isInitialized: false,
+            isLoggingOut: false,
           }),
       }),
       {
