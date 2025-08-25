@@ -1,9 +1,0 @@
-This is another test document for testing the enhanced Qdrant deletion functionality.
-
-We're testing the enhanced debugging features to understand:
-1. Collection structure
-2. Point payload format  
-3. Filter syntax issues
-4. Error details
-
-This should help us identify exactly why the deletion is failing.
